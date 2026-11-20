@@ -32,6 +32,19 @@ class TransactionRepo {
     return rows.isEmpty ? null : TransactionModel.fromMap(rows.first);
   }
 
+  /// Every transaction, newest first (for the History screen).
+  Future<List<TransactionModel>> getAll() async {
+    final db = await _helper.database;
+    final rows = await db.query(_table, orderBy: 'date_time DESC, id DESC');
+    return rows.map(TransactionModel.fromMap).toList();
+  }
+
+  /// Puts a deleted transaction back with its old id (used by "Undo").
+  Future<int> restore(TransactionModel txn) async {
+    final db = await _helper.database;
+    return db.insert(_table, txn.toMap());
+  }
+
   /// The newest [limit] transactions (for "Recent" on Home).
   Future<List<TransactionModel>> recent(int limit) async {
     final db = await _helper.database;
