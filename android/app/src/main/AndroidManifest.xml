@@ -1,6 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- SMS auto-detection: read the inbox and listen for new bank/UPI SMS. -->
+    <uses-permission android:name="android.permission.READ_SMS"/>
+    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+    <!-- Budget alerts and detected-SMS notifications (asked at runtime on Android 13+). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Optional fingerprint unlock. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <!-- No INTERNET permission here on purpose: the release app is fully offline.
+         (src/debug and src/profile add INTERNET only so `flutter run` hot reload works.) -->
+
     <application
-        android:label="expense_tracker"
+        android:label="Expense Tracker"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
