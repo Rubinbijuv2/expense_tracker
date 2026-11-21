@@ -1,0 +1,39 @@
+# Sample SMS for the v2 parser rules (PLAN.md section 4, rules 1–11)
+# Format: SENDER | BODY | amount ; type ; merchant ; mode ; kind ; category   — or IGNORE
+# mode "none" means no payment mode was found.
+# Made-up messages in common Indian formats. Add real ones from your phone (remove account numbers).
+
+# --- Bank SMS (kind = bank) ---
+JD-HDFCBK-S | Rs.450.00 debited from A/c XX1234 on 20-11-26 to VPA swiggy@axisbank (UPI Ref No 632412345678). Not you? Call 18002586161 | 450.00 ; expense ; Swiggy ; UPI ; bank ; Food
+JD-ICICIB-T | ICICI Bank Acct XX901 debited for Rs 1,299.00 on 19-Nov-26; AMAZON PAY credited. UPI:632498761234. Call 18002662 for dispute. | 1299.00 ; expense ; Amazon Pay ; UPI ; bank ; Shopping
+AD-HDFCBK-S | INR 1,500.00 spent on HDFC Bank Card XX4321 at HP PETROL PUMP on 18-11-26. Avl Lmt: INR 48,500.00 | 1500.00 ; expense ; Hp Petrol Pump ; Card ; bank ; Vehicle
+AX-HDFCBK-S | Rs.300.00 debited from A/c XX1234 on 19-11-26 to VPA paytmfastag@paytm UPI Ref No 632400009999 | 300.00 ; expense ; Paytmfastag ; UPI ; bank ; Vehicle
+VM-SBIINB-S | Rs 2,000.00 debited from A/c XX5678 towards GST PAYMENT via NEFT on 20-11-26. Ref No 88776655 -SBI | 2000.00 ; expense ; Gst Payment ; Net banking ; bank ; Tax & Govt
+AX-SBIINB-T | Your A/c XX5678 is credited with INR 15,000.00 on 01-11-26 by NEFT from ABC PVT LTD. -SBI | 15000.00 ; income ; Abc Pvt Ltd ; Net banking ; bank ; Money received
+VM-HDFCBK-S | Rs.32,000.00 credited to your A/c XX1234 on 01-11-26 by NEFT from INFOSYS LTD. Info: SAL NOV26. Avl bal Rs 40,210.55 | 32000.00 ; income ; Infosys Ltd ; Net banking ; bank ; Salary
+VM-ICICIB-S | Dear Customer, Rs.649.00 received in your account XX901 from rahul@okhdfcbank on 15-11-26. UPI Ref 632477778888 | 649.00 ; income ; Rahul ; UPI ; bank ; Money received
+AX-CANBNK-S | Rs 5,000.00 deposited in your A/c XX7788 on 20-11-26 by cash at branch. -Canara Bank | 5000.00 ; income ; Unknown ; none ; bank ; Money received
+
+# --- Refund and cashback (income) ---
+JD-ICICIB-S | Refund of Rs 499.00 from FLIPKART credited to your Acct XX901 on 18-11-26. Ref No 6324000111 | 499.00 ; income ; Flipkart ; none ; bank ; Refund
+AX-AXISBK-S | Cashback of Rs 25.00 credited to your A/c XX4321 for your Diwali offer UPI payment. Avl bal Rs 1,200.00 | 25.00 ; income ; Unknown ; UPI ; bank ; Cashback
+
+# --- Receipts from shops / govt (kind = receipt, always expense) ---
+VM-HMTRAM-S | Your payment of Rs.50.00 for Harithamithram is received. Receipt No HM12345. Thank you. | 50.00 ; expense ; Harithamithram ; Cash ; receipt ; Bills
+AD-VAAHAN-S | Payment received for Vehicle KL07AB1234 PUC fee Rs 120.00. Transaction ID VH998877. Thank you, Team Vaahan | 120.00 ; expense ; Vaahan ; Cash ; receipt ; Vehicle
+VM-ITDCPC-G | Payment of Rs 1,000.00 received for Challan No 2811260045 towards Income Tax. Receipt No ITD45678. | 1000.00 ; expense ; Itdcpc ; Cash ; receipt ; Tax & Govt
+BZ-TNEBPY-S | Rs.640.00 paid successfully for electricity bill via UPI. Receipt No EB556677. | 640.00 ; expense ; Tnebpy ; UPI ; receipt ; Bills
+
+# --- Check this (kind = check: amount but no account and no receipt wording) ---
+BZ-DMARTS-S | Thank you for shopping at DMart. You paid Rs 1,234.50. Visit again! | 1234.50 ; expense ; Dmart ; none ; check ; Others
+
+# --- These must be IGNORED ---
+AX-SWIGGY-P | Rs.100 credited to your Swiggy Money wallet! Order now and save. | IGNORE
+AX-HDFCBK-S | You have earned 150 reward points on your purchase of Rs 1,500 at Croma. Redeem now. | IGNORE
+VM-AIRTEL-S | Your Airtel bill of Rs 499.00 is due on 25-11-26. Pay now to avoid late fee. | IGNORE
+JD-SBICRD-S | Your refund of Rs 899 has been processed and will reach your account in 5-7 days. | IGNORE
+AX-ITDEFL-G | Your ITR for AY 2026-27 has been successfully e-verified. Refund of Rs 2,300 if any will be credited. | IGNORE
+VM-PAYTMB-S | Rs.100 voucher credited to your Paytm wallet. Use it before 30-11-26. | IGNORE
+AD-FLPKRT-S | Get Rs 200 cashback on your next order! TnC apply. | IGNORE
+AX-HDFCBK-S | Transaction intimation: Rs 5,000 debited from A/c XX1234 for SIP was requested. | IGNORE
+9876543210 | Received Rs 500 from Arun | IGNORE
