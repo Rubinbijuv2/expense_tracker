@@ -12,6 +12,9 @@ import 'kind_label.dart';
 ///
 /// A self transfer is drawn greyed, and its main button is
 /// "Ignore (own transfer)" (rule 13).
+///
+/// When the SMS looks like a repeat payment (PLAN.md 5.3), a strip
+/// "Mark Bike EMI as paid?" is shown; nothing happens until it is tapped.
 class DetectedSmsCard extends StatelessWidget {
   const DetectedSmsCard({
     super.key,
@@ -21,6 +24,8 @@ class DetectedSmsCard extends StatelessWidget {
     required this.onEdit,
     required this.onIgnore,
     required this.onIgnoreSender,
+    this.matchName,
+    this.onMarkPaid,
   });
 
   final DetectedSms sms;
@@ -29,6 +34,10 @@ class DetectedSmsCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onIgnore;
   final VoidCallback onIgnoreSender;
+
+  /// Name of the repeat payment this SMS probably paid (null: no match).
+  final String? matchName;
+  final VoidCallback? onMarkPaid;
 
   @override
   Widget build(BuildContext context) {
@@ -124,6 +133,8 @@ class DetectedSmsCard extends StatelessWidget {
               ),
             ),
           ),
+          if (!self && matchName != null && onMarkPaid != null)
+            _matchStrip(theme, matchName!, onMarkPaid!),
           Padding(
             padding: const EdgeInsets.only(right: 4),
             child: self ? _selfButtons() : _normalButtons(),
@@ -136,6 +147,46 @@ class DetectedSmsCard extends StatelessWidget {
       color: self ? scheme.surfaceContainerHighest : null,
       // Opacity draws the whole card see-through, so it looks greyed out.
       child: self ? Opacity(opacity: 0.75, child: content) : content,
+    );
+  }
+
+  /// "Mark **Bike EMI** as paid?  [Mark paid]" — saves this SMS and links
+  /// it to the repeat payment in one tap.
+  Widget _matchStrip(ThemeData theme, String name, VoidCallback onTap) {
+    final scheme = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, right: 12),
+      child: Material(
+        color: scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 2, 2, 2),
+          child: Row(
+            children: [
+              Icon(Icons.event_repeat, size: 18, color: scheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      const TextSpan(text: 'Mark '),
+                      TextSpan(
+                        text: name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const TextSpan(text: ' as paid?'),
+                    ],
+                  ),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+              TextButton(onPressed: onTap, child: const Text('Mark paid')),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -10,6 +10,7 @@ import '../../providers/transaction_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
 import '../../utils/validators.dart';
+import '../../widgets/mark_paid_prompt.dart';
 import '../../widgets/transaction_tile.dart';
 import 'category_grid.dart';
 import 'payment_mode_chips.dart';
@@ -142,15 +143,18 @@ class _AddEditScreenState extends State<AddEditScreen> {
 
     setState(() => _saving = true);
     try {
+      TransactionModel saved = txn;
       if (sms != null) {
         // Also marks the SMS as saved and learns a merchant rule if the
         // category was changed.
-        await smsProvider.saveEdited(sms, txn);
+        saved = await smsProvider.saveEdited(sms, txn);
       } else if (_isEdit) {
         await provider.update(txn);
       } else {
-        await provider.add(txn);
+        saved = txn.copyWith(id: await provider.add(txn));
       }
+      // A new expense that matches a due repeat payment: ask to mark it.
+      if (!_isEdit && mounted) await offerMarkPaid(context, saved);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;

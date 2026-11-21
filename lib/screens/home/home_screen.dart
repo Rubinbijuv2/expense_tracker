@@ -14,11 +14,13 @@ import 'budget_bar_card.dart';
 import 'category_pie_chart.dart';
 import 'detected_sms_strip.dart';
 import 'month_switcher.dart';
+import 'repeat_suggestion_card.dart';
 import 'summary_cards.dart';
 import 'upcoming_card.dart';
 
-/// Dashboard: month switcher, totals, detected SMS strip,
-/// pie chart of spending and the last 5 transactions of the month.
+/// Dashboard: month switcher, totals, budget with forecast, detected SMS
+/// strip, Upcoming repeat payments, repeat-payment suggestion, pie chart of
+/// spending and the last 5 transactions of the month.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -66,7 +68,11 @@ class HomeScreen extends StatelessWidget {
 
     final s = dash.summary;
     final detected = context.read<DetectedSmsProvider>();
-    final recurring = context.read<RecurringProvider>();
+    final recurring = context.watch<RecurringProvider>();
+    // Forecast only makes sense for the current month.
+    final now = DateTime.now();
+    final isThisMonth =
+        dash.month.year == now.year && dash.month.month == now.month;
     // RefreshIndicator: pull the list down to reload from the database.
     return RefreshIndicator(
       onRefresh: () async {
@@ -92,10 +98,12 @@ class HomeScreen extends StatelessWidget {
           BudgetBarCard(
             spentPaise: s.spentPaise,
             limitPaise: dash.budget?.limitPaise,
+            upcomingPaise: isThisMonth ? recurring.dueThisMonthPaise : 0,
             onTap: () => _openBudgets(context, dash),
           ),
           const DetectedSmsStrip(),
           const UpcomingCard(),
+          const RepeatSuggestionCard(),
           CategoryPieChart(totals: s.byCategory),
           const _SectionTitle(title: 'Recent transactions'),
           if (s.recent.isEmpty)

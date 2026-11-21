@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 
+import '../../services/installment_schedule.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/budget_progress.dart';
 
 /// Full-width overall budget bar on Home: "₹X of ₹Y used · Z%".
 /// Shows "Set a monthly budget" when none is set. Tap opens Budgets.
+/// With [upcomingPaise] it adds the forecast line (PLAN.md 5.4):
+/// "Spent ₹6,000 + ₹4,500 upcoming = ₹10,500 of ₹12,000".
 class BudgetBarCard extends StatelessWidget {
   const BudgetBarCard({
     super.key,
     required this.spentPaise,
     required this.limitPaise,
     required this.onTap,
+    this.upcomingPaise = 0,
   });
 
   final int spentPaise;
@@ -18,6 +22,9 @@ class BudgetBarCard extends StatelessWidget {
   /// Null when no overall budget is set for the month.
   final int? limitPaise;
   final VoidCallback onTap;
+
+  /// Repeat payments still due this month (0 hides the forecast line).
+  final int upcomingPaise;
 
   @override
   Widget build(BuildContext context) {
@@ -66,10 +73,29 @@ class BudgetBarCard extends StatelessWidget {
                       '${formatPaise(spentPaise)} of ${formatPaise(limit)} used',
                       style: muted,
                     ),
+                    if (upcomingPaise > 0) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        forecastText(spentPaise, upcomingPaise, limit),
+                        style: muted?.copyWith(
+                          color: budgetColor(
+                            context,
+                            budgetLevel(spentPaise + upcomingPaise, limit),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
         ),
       ),
     );
   }
+}
+
+/// "Spent ₹6,000 + ₹4,500 upcoming = ₹10,500 of ₹12,000".
+String forecastText(int spentPaise, int upcomingPaise, int limitPaise) {
+  const r = shortRupees;
+  return 'Spent ${r(spentPaise)} + ${r(upcomingPaise)} upcoming = '
+      '${r(spentPaise + upcomingPaise)} of ${r(limitPaise)}';
 }

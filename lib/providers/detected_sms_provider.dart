@@ -204,23 +204,37 @@ class DetectedSmsProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// "Save": add the transaction with the guessed category, as it is.
   /// The screen opens Edit instead when there is no guess (the guessed
   /// category may have been deleted), so this is never called without one.
-  Future<void> save(DetectedSms sms) async {
-    final categoryId = sms.guessedCategoryId;
-    if (categoryId == null) {
+  /// Auto-match ("Mark Bike EMI as paid?") passes the repeat payment's
+  /// [categoryId] and [recurringId]. Returns the saved transaction (with id).
+  Future<TransactionModel> save(
+    DetectedSms sms, {
+    int? categoryId,
+    int? recurringId,
+  }) async {
+    final category = categoryId ?? sms.guessedCategoryId;
+    if (category == null) {
       throw StateError('Detected SMS ${sms.id} has no category');
     }
-    await _txns.add(toTransaction(sms, categoryId));
+    final txn = toTransaction(sms, category).copyWith(recurringId: recurringId);
+    final id = await _txns.add(txn);
     await _finish(sms, 'saved');
+    return txn.copyWith(id: id);
   }
 
   /// Save after "Edit". If the user picked a different category, learn a
   /// merchant rule so the next SMS from this merchant gets it automatically.
-  Future<void> saveEdited(DetectedSms sms, TransactionModel txn) async {
-    await _txns.add(txn.copyWith(isSelfTransfer: sms.isSelfTransfer));
+  /// Returns the saved transaction (with id).
+  Future<TransactionModel> saveEdited(
+    DetectedSms sms,
+    TransactionModel txn,
+  ) async {
+    final saved = txn.copyWith(isSelfTransfer: sms.isSelfTransfer);
+    final id = await _txns.add(saved);
     if (txn.categoryId != sms.guessedCategoryId) {
       await _learnRule(sms.merchant, txn.categoryId);
     }
     await _finish(sms, 'saved');
+    return saved.copyWith(id: id);
   }
 
   Future<void> ignore(DetectedSms sms) => _finish(sms, 'ignored');

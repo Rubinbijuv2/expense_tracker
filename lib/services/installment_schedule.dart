@@ -109,6 +109,28 @@ class InstallmentSchedule {
     return best;
   }
 
+  /// Money still to pay for [p] up to the end of [today]'s month: unpaid
+  /// installments (overdue ones too) plus due dates later this month that
+  /// have no installment yet (weekly items). Usual amount for each.
+  static int dueThisMonthPaise(
+    RecurringPayment p,
+    List<RecurringInstallment> list,
+    DateTime today,
+  ) {
+    if (!p.active) return 0;
+    final t = dateOnly(today);
+    final monthEnd = DateTime(t.year, t.month + 1, 0);
+    var count = list
+        .where((i) => i.isPending && !i.dueDate.isAfter(monthEnd))
+        .length;
+    final have = {for (final i in list) periodKey(i.dueDate, p.frequency)};
+    for (final d in datesThrough(p, monthEnd)) {
+      if (d.isBefore(t) || d.isAfter(monthEnd)) continue;
+      if (!have.contains(periodKey(d, p.frequency))) count++;
+    }
+    return count * p.amountPaise;
+  }
+
   static RecurringState stateOf(
     RecurringPayment p,
     List<RecurringInstallment> list,

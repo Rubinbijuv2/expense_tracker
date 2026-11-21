@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/category_model.dart';
 import '../../models/detected_sms.dart';
 import '../../providers/detected_sms_provider.dart';
+import '../../providers/recurring_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/placeholder_body.dart';
@@ -24,6 +25,7 @@ class DetectedSmsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final detected = context.watch<DetectedSmsProvider>();
     final txns = context.watch<TransactionProvider>();
+    final rec = context.watch<RecurringProvider>();
     final pending = detected.pending;
     final cards = detected.cards;
 
@@ -79,6 +81,15 @@ class DetectedSmsScreen extends StatelessWidget {
                           );
                         }
                         final sms = card.first;
+                        // Auto-match (PLAN.md 5.3): only a suggestion.
+                        final match = sms.isSelfTransfer
+                            ? null
+                            : rec.matchFor(
+                                type: sms.type,
+                                amountPaise: sms.amountPaise,
+                                date: sms.receivedAt,
+                                text: '${sms.merchant ?? ''} ${sms.body}',
+                              );
                         return DetectedSmsCard(
                           key: ValueKey(sms.id),
                           sms: sms,
@@ -87,6 +98,10 @@ class DetectedSmsScreen extends StatelessWidget {
                           onEdit: () => AddEditScreen.openFromSms(context, sms),
                           onIgnore: () => _ignore(context, sms),
                           onIgnoreSender: () => _ignoreSender(context, sms),
+                          matchName: match?.item.name,
+                          onMarkPaid: match == null
+                              ? null
+                              : () => _saveAsPaid(context, sms, match),
                         );
                       },
                     ),
@@ -109,6 +124,46 @@ class DetectedSmsScreen extends StatelessWidget {
       await context.read<DetectedSmsProvider>().save(sms);
       messenger.showSnackBar(
         SnackBar(content: Text('Saved ${formatPaise(sms.amountPaise)}')),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not save. Please try again.')),
+      );
+    }
+  }
+
+  /// "Mark Bike EMI as paid?" tapped: save the SMS as an expense in the
+  /// repeat payment's category and mark that installment as paid with it.
+  Future<void> _saveAsPaid(
+    BuildContext context,
+    DetectedSms sms,
+    UpcomingItem match,
+  ) async {
+    final detected = context.read<DetectedSmsProvider>();
+    final rec = context.read<RecurringProvider>();
+    final txns = context.read<TransactionProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    final p = match.item;
+    final categoryId = txns.categoryById(p.categoryId) != null
+        ? p.categoryId
+        : sms.guessedCategoryId;
+    if (categoryId == null) {
+      await AddEditScreen.openFromSms(context, sms);
+      return;
+    }
+    try {
+      final txn = await detected.save(
+        sms,
+        categoryId: categoryId,
+        recurringId: p.id,
+      );
+      await rec.linkPaid(p, match.next, txn);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Saved ${formatPaise(sms.amountPaise)} · ${p.name} marked as paid',
+          ),
+        ),
       );
     } catch (e) {
       messenger.showSnackBar(

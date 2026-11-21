@@ -85,6 +85,7 @@ class TransactionModel {
     String? merchant,
     String? source,
     int? smsId,
+    int? recurringId,
     bool? isSelfTransfer,
   }) => TransactionModel(
     id: id ?? this.id,
@@ -98,7 +99,7 @@ class TransactionModel {
     source: source ?? this.source,
     smsId: smsId ?? this.smsId,
     createdAt: createdAt,
-    recurringId: recurringId,
+    recurringId: recurringId ?? this.recurringId,
     refundOfId: refundOfId,
     isSelfTransfer: isSelfTransfer ?? this.isSelfTransfer,
   );

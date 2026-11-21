@@ -14,16 +14,23 @@ import 'form_fields.dart';
 import 'type_fields.dart';
 
 /// Add a repeat payment, or edit [existing]. Only the fields that belong to
-/// the chosen type are shown.
+/// the chosen type are shown. [prefill] starts a NEW one with some fields
+/// filled in (from a "Make it a repeat payment?" suggestion).
 class RecurringFormScreen extends StatefulWidget {
-  const RecurringFormScreen({super.key, this.existing});
+  const RecurringFormScreen({super.key, this.existing, this.prefill});
 
   final RecurringPayment? existing;
+  final RecurringPayment? prefill;
 
-  static Future<void> open(BuildContext context, {RecurringPayment? item}) =>
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => RecurringFormScreen(existing: item)),
-      );
+  static Future<void> open(
+    BuildContext context, {
+    RecurringPayment? item,
+    RecurringPayment? prefill,
+  }) => Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => RecurringFormScreen(existing: item, prefill: prefill),
+    ),
+  );
 
   @override
   State<RecurringFormScreen> createState() => _RecurringFormScreenState();
@@ -58,7 +65,7 @@ class _RecurringFormScreenState extends State<RecurringFormScreen> {
   @override
   void initState() {
     super.initState();
-    final p = widget.existing;
+    final p = widget.existing ?? widget.prefill;
     final now = DateTime.now();
     _type = p?.type ?? 'bill';
     _frequency = p?.frequency ?? 'monthly';

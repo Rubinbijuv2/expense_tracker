@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/detected_sms_provider.dart';
+import '../../providers/recurring_provider.dart';
 import '../../services/demo_data_service.dart';
+import '../../services/reminder_service.dart';
 import 'data_section.dart';
 import 'test_sms_screen.dart';
 
 /// Hidden Settings rows, shown after tapping "Version" 5 times:
-/// "Load demo data" (for the viva), "Re-check pending SMS" and Test SMS.
+/// "Load demo data" (for the viva), "Re-check pending SMS", Test SMS and
+/// two reminder tests (fire now / in 1 minute).
 class DeveloperSection extends StatefulWidget {
   const DeveloperSection({super.key});
 
@@ -83,6 +86,36 @@ class _DeveloperSectionState extends State<DeveloperSection> {
     }
   }
 
+  /// Test reminder for the soonest unpaid repeat payment (overdue first).
+  Future<void> _testReminder({required bool now}) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final due = context.read<RecurringProvider>().dueList;
+    if (due.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Add a repeat payment first')),
+      );
+      return;
+    }
+    final d = due.first;
+    try {
+      if (now) {
+        await ReminderService.instance.showTestNow(d.item, d.next);
+      } else {
+        await ReminderService.instance.scheduleTestInOneMinute(d.item, d.next);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Reminder for ${d.item.name} in about 1 minute '
+              '(Android may delay it a little)',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Reminder failed: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -108,6 +141,20 @@ class _DeveloperSectionState extends State<DeveloperSection> {
           title: const Text('Test SMS'),
           subtitle: const Text('Paste a bank SMS and see how it is read'),
           onTap: () => TestSmsScreen.open(context),
+        ),
+        ListTile(
+          enabled: !_busy,
+          leading: const Icon(Icons.notifications_active_outlined),
+          title: const Text('Fire a reminder now'),
+          subtitle: const Text('For the next unpaid repeat payment'),
+          onTap: () => _testReminder(now: true),
+        ),
+        ListTile(
+          enabled: !_busy,
+          leading: const Icon(Icons.alarm),
+          title: const Text('Test reminder in 1 minute'),
+          subtitle: const Text('Uses the same scheduling as real reminders'),
+          onTap: () => _testReminder(now: false),
         ),
       ],
     );

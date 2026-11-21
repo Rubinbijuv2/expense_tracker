@@ -21,8 +21,9 @@ class NotificationService {
   bool _ready = false;
 
   // Notification ids: one fixed id for the inbox-scan summary,
-  // 1000 + detected_sms.id for each SMS and 1000000 + budgets.id for
-  // budget alerts, so ids never clash.
+  // 1000 + detected_sms.id for each SMS, 1000000 + budgets.id for
+  // budget alerts and 2000000+ for repeat-payment reminders
+  // (ReminderPlanner.idFor), so ids never clash.
   static const int _scanSummaryId = 1;
   static const int _smsIdOffset = 1000;
   static const int _budgetIdOffset = 1000000;
@@ -45,32 +46,33 @@ class NotificationService {
         priority: Priority.high,
       );
 
-  /// Sets up the plugin once. [onTap] runs when the user taps a notification
-  /// while the app is open or in the background.
-  Future<void> init({VoidCallback? onTap}) async {
+  /// The plugin itself (ReminderService schedules reminders with it).
+  FlutterLocalNotificationsPlugin get plugin => _plugin;
+
+  /// Sets up the plugin once. [onResponse] runs when the user taps a
+  /// notification (or a button that opens the app) while the app is open or
+  /// in the background; main.dart decides which screen to show.
+  Future<void> init({void Function(NotificationResponse)? onResponse}) async {
     if (_ready) return;
     await _plugin.initialize(
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       ),
-      // Tapping the notification itself (not a button) opens Detected SMS.
-      onDidReceiveNotificationResponse: onTap == null
-          ? null
-          : (r) {
-              if (r.actionId == null) onTap();
-            },
-      // The Save / Ignore buttons run here, without opening the app.
-      // Always passed (also from the background SMS handler) so Android
-      // keeps knowing which Dart function to call.
+      onDidReceiveNotificationResponse: onResponse,
+      // The Save / Ignore / Mark as paid buttons run here, without opening
+      // the app. Always passed (also from the background SMS handler) so
+      // Android keeps knowing which Dart function to call.
       onDidReceiveBackgroundNotificationResponse: onNotificationAction,
     );
     _ready = true;
   }
 
-  /// True if the app was started (from closed) by tapping one of our notifications.
-  Future<bool> launchedFromNotification() async {
+  /// The tap that started the app from closed, or null if it was not
+  /// started by one of our notifications.
+  Future<NotificationResponse?> launchResponse() async {
     final details = await _plugin.getNotificationAppLaunchDetails();
-    return details?.didNotificationLaunchApp ?? false;
+    if (details == null || !details.didNotificationLaunchApp) return null;
+    return details.notificationResponse;
   }
 
   /// "₹450 paid to Swiggy — tap to add", with **Save** and **Ignore**
@@ -139,6 +141,18 @@ class NotificationService {
       await _plugin.cancel(id: _smsIdOffset + smsId);
     } catch (e) {
       debugPrint('Could not cancel notification: $e');
+    }
+  }
+
+  /// Removes shown or scheduled notifications (used after "Mark as paid").
+  Future<void> cancelIds(Iterable<int> ids) async {
+    try {
+      await init();
+      for (final id in ids) {
+        await _plugin.cancel(id: id);
+      }
+    } catch (e) {
+      debugPrint('Could not cancel notifications: $e');
     }
   }
 

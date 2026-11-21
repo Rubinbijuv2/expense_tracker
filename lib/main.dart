@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/app_lock_provider.dart';
@@ -8,13 +9,16 @@ import 'providers/detected_sms_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/own_accounts_provider.dart';
 import 'providers/recurring_provider.dart';
+import 'providers/repeat_suggestion_provider.dart';
 import 'providers/report_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'screens/detected/detected_sms_screen.dart';
 import 'screens/lock/lock_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
+import 'screens/recurring/reminder_actions.dart';
 import 'services/notification_service.dart';
+import 'services/reminder_planner.dart';
 import 'utils/constants.dart';
 import 'widgets/main_shell.dart';
 
@@ -24,10 +28,10 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   // Needed before using plugins (notifications) ahead of runApp.
   WidgetsFlutterBinding.ensureInitialized();
-  var openDetected = false;
+  NotificationResponse? launchTap;
   try {
-    await NotificationService.instance.init(onTap: _openDetectedScreen);
-    openDetected = await NotificationService.instance.launchedFromNotification();
+    await NotificationService.instance.init(onResponse: _onNotificationTap);
+    launchTap = await NotificationService.instance.launchResponse();
   } catch (e) {
     debugPrint('Notifications not available: $e');
   }
@@ -39,11 +43,26 @@ Future<void> main() async {
 
   runApp(ExpenseTrackerApp(settings: settings, lock: lock));
 
-  // App was closed and the user tapped "₹450 paid to Swiggy — tap to add".
+  // App was closed and the user tapped one of our notifications
+  // ("₹450 paid to Swiggy — tap to add", or a repeat-payment reminder).
   // (The lock screen still covers it until the PIN is entered.)
-  if (openDetected && settings.onboardingDone) {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _openDetectedScreen());
+  if (launchTap != null && settings.onboardingDone) {
+    final tap = launchTap;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onNotificationTap(tap));
   }
+}
+
+/// A notification, or one of its buttons that opens the app, was tapped.
+void _onNotificationTap(NotificationResponse r) {
+  final reminder = ReminderPayload.parse(r.payload);
+  if (reminder != null) {
+    final context = navigatorKey.currentContext;
+    if (context != null) handleReminderResponse(context, r.actionId, reminder);
+    return;
+  }
+  // Detected SMS: only the notification itself (Save / Ignore run in the
+  // background without opening the app).
+  if (r.actionId == null) _openDetectedScreen();
 }
 
 void _openDetectedScreen() {
@@ -74,8 +93,11 @@ class ExpenseTrackerApp extends StatelessWidget {
     // HistoryProvider: search text, filters and matching rows for History.
     // ReportProvider: month, charts data and CSV/PDF export for Reports.
     // OwnAccountsProvider: Settings → My accounts (self-transfer detection).
-    // RecurringProvider: repeat payments; `..load()` also creates any
-    //   installments that became due since the app was last opened.
+    // RecurringProvider: repeat payments; `..ensureLoaded()` also creates
+    //   any installments that became due since the app was last opened and
+    //   schedules the reminders. `lazy: false` creates it at start-up
+    //   (providers are normally created only when a screen first reads them).
+    // RepeatSuggestionProvider: "Make it a repeat payment?" cards on Home.
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: settings),
@@ -103,8 +125,16 @@ class ExpenseTrackerApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => OwnAccountsProvider()..load()),
         ChangeNotifierProvider(
+          lazy: false,
           create: (context) =>
-              RecurringProvider(context.read<TransactionProvider>())..load(),
+              RecurringProvider(context.read<TransactionProvider>())
+                ..ensureLoaded(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => RepeatSuggestionProvider(
+            context.read<TransactionProvider>(),
+            context.read<RecurringProvider>(),
+          ),
         ),
       ],
       // Consumer rebuilds only the MaterialApp when the theme setting changes.

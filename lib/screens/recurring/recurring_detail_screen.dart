@@ -5,6 +5,7 @@ import '../../models/recurring_installment.dart';
 import '../../models/recurring_payment.dart';
 import '../../providers/recurring_provider.dart';
 import '../../providers/transaction_provider.dart';
+import '../../services/dialer_service.dart';
 import '../../services/installment_schedule.dart';
 import 'amount_dialog.dart';
 import 'installment_tile.dart';
@@ -46,6 +47,12 @@ class RecurringDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(p.name),
         actions: [
+          if (p.isChitti && (p.organiserPhone ?? '').isNotEmpty)
+            IconButton(
+              tooltip: 'Call organiser',
+              icon: const Icon(Icons.call_outlined),
+              onPressed: () => DialerService.dial(p.organiserPhone),
+            ),
           IconButton(
             tooltip: 'Edit',
             icon: const Icon(Icons.edit_outlined),

@@ -10,6 +10,8 @@ import '../models/detected_sms.dart';
 import '../models/transaction_model.dart';
 import '../utils/constants.dart';
 import 'budget_alert_service.dart';
+import 'recurring_action_service.dart';
+import 'reminder_planner.dart';
 
 /// Android calls this when the user taps **Save** or **Ignore** on a
 /// detected-SMS notification (PLAN.md rule 14). It runs in a separate
@@ -21,6 +23,20 @@ import 'budget_alert_service.dart';
 Future<void> onNotificationAction(NotificationResponse response) async {
   // Lets plugins written in Dart work in this background isolate too.
   DartPluginRegistrant.ensureInitialized();
+  // A repeat-payment reminder's "Mark as paid" (payload "rec:…").
+  final reminder = ReminderPayload.parse(response.payload);
+  if (reminder != null) {
+    if (response.actionId != RecurringActionService.markPaidAction) return;
+    try {
+      if (await RecurringActionService().markPaid(reminder)) {
+        IsolateNameServer.lookupPortByName(RecurringActionService.portName)
+            ?.send(reminder.recurringId);
+      }
+    } catch (e) {
+      debugPrint('Reminder action failed: $e');
+    }
+    return;
+  }
   final smsId = int.tryParse(response.payload ?? '');
   if (smsId == null) return;
   try {

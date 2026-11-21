@@ -1,5 +1,7 @@
+import 'dart:isolate';
+import 'dart:ui';
+
 import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
 
 import '../data/recurring_installment_repo.dart';
 import '../data/recurring_payment_repo.dart';
@@ -8,11 +10,16 @@ import '../models/recurring_installment.dart';
 import '../models/recurring_payment.dart';
 import '../models/transaction_model.dart';
 import '../services/installment_schedule.dart';
+import '../services/recurring_match.dart';
+import '../services/recurring_action_service.dart';
+import '../services/reminder_service.dart';
 import 'transaction_provider.dart';
 
-/// A repeat payment together with its next pending installment
-/// (used by the Home card).
-typedef UpcomingItem = ({RecurringPayment item, RecurringInstallment next});
+export 'recurring_queries.dart';
+
+/// A repeat payment together with one of its pending installments
+/// (used by the Home card and auto-match).
+typedef UpcomingItem = DueItem;
 
 /// Repeat payments (bills, EMI, chitti, fees) and their installments.
 ///
@@ -24,7 +31,9 @@ class RecurringProvider extends ChangeNotifier {
     RecurringPaymentRepo? paymentRepo,
     RecurringInstallmentRepo? installmentRepo,
   }) : _repo = paymentRepo ?? RecurringPaymentRepo(),
-       _instRepo = installmentRepo ?? RecurringInstallmentRepo();
+       _instRepo = installmentRepo ?? RecurringInstallmentRepo() {
+    _listenForNotificationActions();
+  }
 
   final TransactionProvider _txns;
   final RecurringPaymentRepo _repo;
@@ -34,10 +43,16 @@ class RecurringProvider extends ChangeNotifier {
   Map<int, List<RecurringInstallment>> _installments = {};
   bool _loading = true;
   String? _error;
+  Future<void>? _firstLoad;
+  ReceivePort? _actionPort;
 
   bool get isLoading => _loading;
   String? get error => _error;
   List<RecurringPayment> get items => List.unmodifiable(_items);
+
+  /// Every installment, by repeat payment id (read-only).
+  Map<int, List<RecurringInstallment>> get allInstallments =>
+      Map.unmodifiable(_installments);
 
   static DateTime get _today => InstallmentSchedule.dateOnly(DateTime.now());
 
@@ -68,20 +83,14 @@ class RecurringProvider extends ChangeNotifier {
         t: _items.where((p) => p.type == t).toList(),
   };
 
-  /// Active items with a pending installment, soonest (or most late) first.
-  List<UpcomingItem> get upcoming {
-    final list = <UpcomingItem>[];
-    for (final p in _items) {
-      final next = nextPending(p.id!);
-      if (p.active && next != null) list.add((item: p, next: next));
-    }
-    list.sort((a, b) => a.next.dueDate.compareTo(b.next.dueDate));
-    return list;
-  }
-
   // ---- Loading and generating installments ---------------------------------
 
-  /// Creates any missing installments, then reads everything again.
+  /// The first [load] (main.dart starts it). Notification taps wait for it.
+  Future<void> ensureLoaded() => _firstLoad ??= load();
+
+  /// Creates any missing installments, then reads everything again, and
+  /// schedules the reminders again (PLAN.md 5.2: on app start and after
+  /// every change).
   Future<void> load() async {
     try {
       _items = await _repo.getAll();
@@ -90,6 +99,7 @@ class RecurringProvider extends ChangeNotifier {
       }
       await _reloadInstallments();
       _error = null;
+      _reschedule();
     } catch (e) {
       _error = 'Could not load repeat payments: $e';
       debugPrint(_error);
@@ -167,19 +177,25 @@ class RecurringProvider extends ChangeNotifier {
     int? txnId;
     if (addTransaction) {
       txnId = await _txns.add(
-        TransactionModel(
-          amountPaise: amountPaise,
-          type: 'expense',
-          categoryId: p.categoryId,
-          paymentMode: p.paymentMode,
-          dateTime: now,
-          merchant: p.name,
-          note: '${p.name} · due ${_shortDate(inst.dueDate)}',
-          recurringId: p.id,
-        ),
+        RecurringActionService.paymentTransaction(p, inst, amountPaise, now),
       );
     }
     await _instRepo.update(inst.paid(amountPaise, txnId, now));
+    await _afterChange(p);
+  }
+
+  /// Auto-match (PLAN.md 5.3): the user tapped "Mark Bike EMI as paid?" for
+  /// an expense that is already saved. Links [txn] to the installment
+  /// instead of creating a second expense.
+  Future<void> linkPaid(
+    RecurringPayment p,
+    RecurringInstallment inst,
+    TransactionModel txn,
+  ) async {
+    if (txn.recurringId != p.id) {
+      await _txns.update(txn.copyWith(recurringId: p.id));
+    }
+    await _instRepo.update(inst.paid(txn.amountPaise, txn.id, DateTime.now()));
     await _afterChange(p);
   }
 
@@ -254,7 +270,31 @@ class RecurringProvider extends ChangeNotifier {
   Future<void> _afterChange(RecurringPayment p) async {
     await _sync(p);
     await _reloadInstallments();
+    _reschedule();
     notifyListeners();
+  }
+
+  void _reschedule() =>
+      ReminderService.instance.reschedule(_items, _installments);
+
+  /// A reminder's "Mark as paid" ran in the background isolate; it posts
+  /// to this mailbox so the open app reloads (see SmsActionService).
+  void _listenForNotificationActions() {
+    try {
+      final port = ReceivePort();
+      IsolateNameServer.removePortNameMapping(RecurringActionService.portName);
+      IsolateNameServer.registerPortWithName(
+        port.sendPort,
+        RecurringActionService.portName,
+      );
+      port.listen((_) async {
+        await _txns.load();
+        await load();
+      });
+      _actionPort = port;
+    } catch (e) {
+      debugPrint('Could not listen for reminder actions: $e');
+    }
   }
 
   TransactionModel? _findTxn(bool Function(TransactionModel) test) {
@@ -275,5 +315,10 @@ class RecurringProvider extends ChangeNotifier {
     return list.isEmpty ? null : list.first;
   }
 
-  static String _shortDate(DateTime d) => DateFormat('d MMM yyyy').format(d);
+  @override
+  void dispose() {
+    _actionPort?.close();
+    IsolateNameServer.removePortNameMapping(RecurringActionService.portName);
+    super.dispose();
+  }
 }

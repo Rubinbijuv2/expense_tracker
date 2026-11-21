@@ -37,13 +37,13 @@ String scheduleLabel(RecurringPayment p) => switch (p.frequency) {
   _ => 'Monthly on the ${ordinal(p.dueDay)}',
 };
 
-/// "Due in 3 days", "Due today", "Not paid · was due 5 Nov", ...
+/// "Due in 3 days", "Due today", "Overdue · was due 5 Nov", ...
 String stateLabel(RecurringState state, RecurringInstallment? next) {
   final d = next == null ? '' : DateFormat('d MMM').format(next.dueDate);
   return switch (state) {
     RecurringState.paused => 'Paused',
     RecurringState.completed => 'Completed',
-    RecurringState.late => 'Not paid · was due $d',
+    RecurringState.late => 'Overdue · was due $d',
     RecurringState.dueToday => 'Due today',
     RecurringState.dueSoon =>
       'Due $d (in ${next!.dueDate.difference(InstallmentSchedule.dateOnly(DateTime.now())).inDays} days)',
@@ -51,10 +51,10 @@ String stateLabel(RecurringState state, RecurringInstallment? next) {
   };
 }
 
-/// Colour for the status text (red "overdue" styling comes in step 13).
+/// Colour for the status text: overdue is red (PLAN.md 5.2).
 Color stateColor(RecurringState state, ColorScheme cs) => switch (state) {
   RecurringState.dueToday || RecurringState.dueSoon => cs.primary,
-  RecurringState.late => cs.tertiary,
+  RecurringState.late => cs.error,
   _ => cs.onSurfaceVariant,
 };
 
@@ -83,9 +83,12 @@ class RecurringTile extends StatelessWidget {
     final cs = theme.colorScheme;
     final color = Color(category?.color ?? 0xFF757575);
     final muted = !item.active || state == RecurringState.completed;
+    final overdue = state == RecurringState.late;
 
     return ListTile(
       onTap: onTap,
+      // A light red background makes overdue rows stand out in the list.
+      tileColor: overdue ? cs.errorContainer.withValues(alpha: 0.35) : null,
       leading: CircleAvatar(
         backgroundColor: color.withValues(alpha: muted ? 0.06 : 0.15),
         child: Icon(
@@ -112,7 +115,7 @@ class RecurringTile extends StatelessWidget {
       trailing: Text(
         formatPaise(item.amountPaise),
         style: theme.textTheme.titleSmall?.copyWith(
-          color: muted ? cs.outline : null,
+          color: muted ? cs.outline : (overdue ? cs.error : null),
         ),
       ),
     );
