@@ -2,12 +2,39 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/dashboard_provider.dart';
+import 'providers/detected_sms_provider.dart';
 import 'providers/transaction_provider.dart';
+import 'screens/detected/detected_sms_screen.dart';
+import 'services/notification_service.dart';
 import 'utils/constants.dart';
 import 'widgets/main_shell.dart';
 
-void main() {
+/// Lets code outside the widget tree (a tapped notification) open a screen.
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+Future<void> main() async {
+  // Needed before using plugins (notifications) ahead of runApp.
+  WidgetsFlutterBinding.ensureInitialized();
+  var openDetected = false;
+  try {
+    await NotificationService.instance.init(onTap: _openDetectedScreen);
+    openDetected = await NotificationService.instance.launchedFromNotification();
+  } catch (e) {
+    debugPrint('Notifications not available: $e');
+  }
+
   runApp(const ExpenseTrackerApp());
+
+  // App was closed and the user tapped "₹450 paid to Swiggy — tap to add".
+  if (openDetected) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openDetectedScreen());
+  }
+}
+
+void _openDetectedScreen() {
+  final nav = navigatorKey.currentState;
+  if (nav == null) return;
+  nav.push(MaterialPageRoute(builder: (_) => const DetectedSmsScreen()));
 }
 
 class ExpenseTrackerApp extends StatelessWidget {
@@ -18,6 +45,7 @@ class ExpenseTrackerApp extends StatelessWidget {
     // MultiProvider puts several providers above every screen.
     // TransactionProvider: `..load()` reads the database as soon as it is created.
     // DashboardProvider: gets the TransactionProvider so it can listen to it.
+    // DetectedSmsProvider: `..start()` checks SMS permission and starts detection.
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => TransactionProvider()..load()),
@@ -25,8 +53,13 @@ class ExpenseTrackerApp extends StatelessWidget {
           create: (context) =>
               DashboardProvider(context.read<TransactionProvider>()),
         ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              DetectedSmsProvider(context.read<TransactionProvider>())..start(),
+        ),
       ],
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         title: AppConstants.appName,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,

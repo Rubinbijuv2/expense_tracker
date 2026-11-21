@@ -112,6 +112,29 @@ class TransactionRepo {
     return rows.first['total'] as int? ?? 0;
   }
 
+  /// True if a transaction with the same amount and merchant exists within
+  /// [window] of [at] (duplicate check for detected SMS, PLAN.md rule 10).
+  Future<bool> existsSimilar(
+    int amountPaise,
+    String merchant,
+    DateTime at, {
+    Duration window = const Duration(minutes: 2),
+  }) async {
+    final db = await _helper.database;
+    final rows = await db.rawQuery(
+      'SELECT 1 FROM $_table WHERE amount_paise = ? '
+      'AND LOWER(merchant) = LOWER(?) AND date_time >= ? AND date_time <= ? '
+      'LIMIT 1',
+      [
+        amountPaise,
+        merchant,
+        at.subtract(window).toIso8601String(),
+        at.add(window).toIso8601String(),
+      ],
+    );
+    return rows.isNotEmpty;
+  }
+
   /// Start (inclusive) and end (exclusive) of the month containing [month],
   /// as ISO-8601 strings that compare correctly with stored `date_time`.
   /// Returns a "record" — two values in one, read with `final (a, b) = ...`.

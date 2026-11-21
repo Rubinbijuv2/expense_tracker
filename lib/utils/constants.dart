@@ -6,6 +6,9 @@ class AppConstants {
 
   static const String appName = 'Expense Tracker';
 
+  /// Shown in Settings. Keep in sync with `version:` in pubspec.yaml.
+  static const String appVersion = '1.0.0';
+
   /// Seed colour: Material 3 generates the whole colour palette from this.
   static const Color seedColor = Colors.teal;
 

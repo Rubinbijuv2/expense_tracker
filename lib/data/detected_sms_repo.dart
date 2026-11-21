@@ -75,4 +75,28 @@ class DetectedSmsRepo {
     );
     return rows.isNotEmpty;
   }
+
+  /// True if a *pending* SMS with the same amount and merchant arrived
+  /// within [window] of [at] (PLAN.md rule 10). Merchant is case-insensitive.
+  Future<bool> existsSimilarPending(
+    int amountPaise,
+    String merchant,
+    DateTime at, {
+    Duration window = const Duration(minutes: 2),
+  }) async {
+    final db = await _helper.database;
+    final rows = await db.rawQuery(
+      'SELECT 1 FROM $_table WHERE status = ? AND amount_paise = ? '
+      'AND LOWER(merchant) = LOWER(?) AND received_at >= ? AND received_at <= ? '
+      'LIMIT 1',
+      [
+        'pending',
+        amountPaise,
+        merchant,
+        at.subtract(window).toIso8601String(),
+        at.add(window).toIso8601String(),
+      ],
+    );
+    return rows.isNotEmpty;
+  }
 }

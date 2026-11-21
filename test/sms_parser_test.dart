@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:expense_tracker/models/merchant_rule.dart';
+import 'package:expense_tracker/screens/settings/sample_sms_data.dart';
 import 'package:expense_tracker/services/category_guesser.dart';
 import 'package:expense_tracker/services/sms_parser.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,6 +37,15 @@ void main() {
     test('fixture file has both kinds of cases', () {
       expect(cases.where((c) => c.expected == 'IGNORE'), isNotEmpty);
       expect(cases.where((c) => c.expected != 'IGNORE'), isNotEmpty);
+    });
+
+    // The Test SMS screen has its own copy of these messages
+    // (lib/screens/settings/sample_sms_data.dart). Keep them identical.
+    test('Test SMS screen samples match the fixture file', () {
+      expect(
+        sampleSmsList.map((s) => '${s.sender} | ${s.body}').toList(),
+        cases.map((c) => '${c.sender} | ${c.body}').toList(),
+      );
     });
 
     for (final c in cases) {

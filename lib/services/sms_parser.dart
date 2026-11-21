@@ -29,6 +29,15 @@ class ParsedSms {
       'mode $paymentMode, a/c $accountLast4)';
 }
 
+/// Either a [ParsedSms], or the reason the SMS was ignored.
+class ParseResult {
+  final ParsedSms? sms;
+  final String? ignoredReason;
+
+  const ParseResult.parsed(ParsedSms this.sms) : ignoredReason = null;
+  const ParseResult.ignored(String this.ignoredReason) : sms = null;
+}
+
 class SmsParser {
   SmsParser._(); // Only static methods; not meant to be instantiated.
 
@@ -43,11 +52,19 @@ class SmsParser {
   );
 
   // ---- Rule 3: words that mean "not a real transaction" -----------------
-  static final RegExp _dropWord = RegExp(
-    r'\botp\b|one time password|verification code|\boffer|cashback on'
-    r'|apply now|due on|statement|will be debited|requested',
-    caseSensitive: false,
-  );
+  // Same words as PLAN.md rule 3, grouped so we can say *why* an SMS was dropped.
+  static final Map<RegExp, String> _dropWords = {
+    RegExp(r'\botp\b|one time password|verification code',
+        caseSensitive: false): 'OTP message',
+    RegExp(r'\boffer|cashback on|apply now', caseSensitive: false):
+        'promotional message',
+    RegExp(r'due on|statement', caseSensitive: false):
+        'bill statement or due reminder',
+    RegExp(r'will be debited', caseSensitive: false):
+        'future debit (not paid yet)',
+    RegExp(r'requested', caseSensitive: false):
+        'payment request (not paid yet)',
+  };
 
   // ---- Rule 4: amount ----------------------------------------------------
   static final RegExp _amount = RegExp(
@@ -94,23 +111,38 @@ class SmsParser {
   static const Set<String> _keepUpper = {'ATM'};
 
   /// Returns the parsed SMS, or null if it should be ignored.
-  static ParsedSms? parse(String sender, String body) {
+  static ParsedSms? parse(String sender, String body) =>
+      parseWithReason(sender, body).sms;
+
+  /// Same rules as [parse], but when the SMS is ignored it also says why
+  /// (shown on the developer Test SMS screen).
+  static ParseResult parseWithReason(String sender, String body) {
     final from = sender.trim().toUpperCase();
-    if (!_bankSender.hasMatch(from)) return null; // Rule 1
+    if (!_bankSender.hasMatch(from)) {
+      return const ParseResult.ignored('not a bank sender'); // Rule 1
+    }
 
     final text = body.replaceAll(_spaces, ' ').trim();
+    // Rule 3 is checked before rule 2 so an OTP SMS is reported as
+    // "OTP message". Either way the SMS is dropped.
+    for (final drop in _dropWords.entries) {
+      if (drop.key.hasMatch(text)) return ParseResult.ignored(drop.value);
+    }
     final firstWord = _txnWord.firstMatch(text);
-    if (firstWord == null) return null; // Rule 2
-    if (_dropWord.hasMatch(text)) return null; // Rule 3
+    if (firstWord == null) {
+      return const ParseResult.ignored('no transaction word (debited, paid…)');
+    }
 
     final amountPaise = _findAmountPaise(text); // Rule 4
-    if (amountPaise == null || amountPaise <= 0) return null;
+    if (amountPaise == null || amountPaise <= 0) {
+      return const ParseResult.ignored('no amount found');
+    }
 
     final word = firstWord.group(1)!.toLowerCase(); // Rule 5
     final type =
         (word == 'credited' || word == 'received') ? 'income' : 'expense';
 
-    return ParsedSms(
+    return ParseResult.parsed(ParsedSms(
       sender: from,
       body: body.trim(),
       amountPaise: amountPaise,
@@ -118,7 +150,7 @@ class SmsParser {
       merchant: _findMerchant(text, type), // Rule 6
       accountLast4: _account.firstMatch(text)?.group(1), // Rule 7
       paymentMode: _findPaymentMode(text), // Rule 8
-    );
+    ));
   }
 
   static int? _findAmountPaise(String text) {

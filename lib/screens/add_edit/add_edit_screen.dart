@@ -3,24 +3,36 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/detected_sms.dart';
 import '../../models/transaction_model.dart';
+import '../../providers/detected_sms_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
 import '../../utils/validators.dart';
 import '../../widgets/transaction_tile.dart';
 import 'category_grid.dart';
+import 'payment_mode_chips.dart';
 
-/// Add a new transaction, or edit [existing] when it is given.
+/// Add a new transaction, edit [existing], or review a detected SMS
+/// ([fromSms]) before saving it.
 class AddEditScreen extends StatefulWidget {
-  const AddEditScreen({super.key, this.existing});
+  const AddEditScreen({super.key, this.existing, this.fromSms});
 
   final TransactionModel? existing;
+  final DetectedSms? fromSms;
 
   /// Opens this screen. Used by the + buttons and by tapping a row.
   static Future<void> open(BuildContext context, {TransactionModel? txn}) {
     return Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => AddEditScreen(existing: txn)),
+    );
+  }
+
+  /// "Edit" on a detected SMS: the form starts filled with the SMS details.
+  static Future<void> openFromSms(BuildContext context, DetectedSms sms) {
+    return Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => AddEditScreen(fromSms: sms)),
     );
   }
 
@@ -54,6 +66,14 @@ class _AddEditScreenState extends State<AddEditScreen> {
     if (t != null) {
       _amountCtrl.text = paiseToInput(t.amountPaise);
       _noteCtrl.text = t.note ?? '';
+    }
+    final sms = widget.fromSms;
+    if (sms != null) {
+      _type = sms.type;
+      _categoryId = sms.guessedCategoryId;
+      _paymentMode = sms.paymentMode ?? AppConstants.defaultPaymentMode;
+      _dateTime = sms.receivedAt;
+      _amountCtrl.text = paiseToInput(sms.amountPaise);
     }
   }
 
@@ -98,7 +118,9 @@ class _AddEditScreenState extends State<AddEditScreen> {
     if (!formOk || _categoryError != null) return;
 
     final provider = context.read<TransactionProvider>();
+    final smsProvider = context.read<DetectedSmsProvider>();
     final old = widget.existing;
+    final sms = widget.fromSms;
     final note = _noteCtrl.text.trim();
     final txn = TransactionModel(
       id: old?.id,
@@ -108,15 +130,23 @@ class _AddEditScreenState extends State<AddEditScreen> {
       paymentMode: _paymentMode,
       dateTime: _dateTime,
       note: note.isEmpty ? null : note,
-      merchant: old?.merchant,
-      source: old?.source ?? 'manual',
-      smsId: old?.smsId,
+      merchant: old?.merchant ?? sms?.merchant,
+      source: sms != null ? 'sms' : (old?.source ?? 'manual'),
+      smsId: old?.smsId ?? sms?.id,
       createdAt: old?.createdAt,
     );
 
     setState(() => _saving = true);
     try {
-      _isEdit ? await provider.update(txn) : await provider.add(txn);
+      if (sms != null) {
+        // Also marks the SMS as saved and learns a merchant rule if the
+        // category was changed.
+        await smsProvider.saveEdited(sms, txn);
+      } else if (_isEdit) {
+        await provider.update(txn);
+      } else {
+        await provider.add(txn);
+      }
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
@@ -157,7 +187,9 @@ class _AddEditScreenState extends State<AddEditScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEdit ? 'Edit transaction' : 'Add transaction'),
+        title: Text(widget.fromSms != null
+            ? 'Add from SMS: ${widget.fromSms!.merchant ?? 'Unknown'}'
+            : (_isEdit ? 'Edit transaction' : 'Add transaction')),
         actions: [
           if (_isEdit)
             IconButton(
@@ -226,16 +258,9 @@ class _AddEditScreenState extends State<AddEditScreen> {
             const SizedBox(height: 20),
             Text('Payment mode', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                for (final mode in AppConstants.paymentModes)
-                  ChoiceChip(
-                    label: Text(mode),
-                    selected: _paymentMode == mode,
-                    onSelected: (_) => setState(() => _paymentMode = mode),
-                  ),
-              ],
+            PaymentModeChips(
+              selected: _paymentMode,
+              onSelected: (mode) => setState(() => _paymentMode = mode),
             ),
             const SizedBox(height: 12),
             ListTile(

@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/dashboard_provider.dart';
+import '../../providers/detected_sms_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../widgets/placeholder_body.dart';
 import '../../widgets/transaction_tile.dart';
 import '../add_edit/add_edit_screen.dart';
 import 'category_pie_chart.dart';
+import 'detected_sms_strip.dart';
 import 'month_switcher.dart';
 import 'summary_cards.dart';
 
-/// Dashboard: month switcher, totals, detected SMS (placeholder),
+/// Dashboard: month switcher, totals, detected SMS strip,
 /// pie chart of spending and the last 5 transactions of the month.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -46,11 +48,13 @@ class HomeScreen extends StatelessWidget {
     }
 
     final s = dash.summary;
+    final detected = context.read<DetectedSmsProvider>();
     // RefreshIndicator: pull the list down to reload from the database.
     return RefreshIndicator(
       onRefresh: () async {
         await txns.load();
         await dash.loadBudget();
+        await detected.load();
       },
       child: ListView(
         padding: const EdgeInsets.only(bottom: 88), // room for the + button
@@ -66,7 +70,7 @@ class HomeScreen extends StatelessWidget {
             balancePaise: s.balancePaise,
             budgetLimitPaise: dash.budget?.limitPaise,
           ),
-          const _DetectedSmsPlaceholder(),
+          const DetectedSmsStrip(),
           CategoryPieChart(totals: s.byCategory),
           const _SectionTitle(title: 'Recent transactions'),
           if (s.recent.isEmpty)
@@ -82,24 +86,6 @@ class HomeScreen extends StatelessWidget {
                 onTap: () => AddEditScreen.open(context, txn: t),
               ),
         ],
-      ),
-    );
-  }
-}
-
-/// Space for the "Detected SMS" strip, filled in step 6.
-class _DetectedSmsPlaceholder extends StatelessWidget {
-  const _DetectedSmsPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
-      child: ListTile(
-        leading: Icon(Icons.sms_outlined, color: theme.colorScheme.secondary),
-        title: const Text('Detected SMS'),
-        subtitle: const Text('Bank SMS suggestions will appear here.'),
       ),
     );
   }
