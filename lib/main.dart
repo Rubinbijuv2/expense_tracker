@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'providers/budget_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/detected_sms_provider.dart';
+import 'providers/history_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'screens/detected/detected_sms_screen.dart';
 import 'services/notification_service.dart';
@@ -48,6 +49,7 @@ class ExpenseTrackerApp extends StatelessWidget {
     // DashboardProvider: gets the TransactionProvider so it can listen to it.
     // DetectedSmsProvider: `..start()` checks SMS permission and starts detection.
     // BudgetProvider: budgets of the month chosen on the Budgets screen.
+    // HistoryProvider: search text, filters and matching rows for History.
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => TransactionProvider()..load()),
@@ -62,6 +64,10 @@ class ExpenseTrackerApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) =>
               BudgetProvider(context.read<TransactionProvider>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              HistoryProvider(context.read<TransactionProvider>()),
         ),
       ],
       child: MaterialApp(

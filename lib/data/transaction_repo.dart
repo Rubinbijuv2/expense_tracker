@@ -1,4 +1,5 @@
 import '../models/category_total.dart';
+import '../models/transaction_filter.dart';
 import '../models/transaction_model.dart';
 import 'db_helper.dart';
 
@@ -36,6 +37,20 @@ class TransactionRepo {
   Future<List<TransactionModel>> getAll() async {
     final db = await _helper.database;
     final rows = await db.query(_table, orderBy: 'date_time DESC, id DESC');
+    return rows.map(TransactionModel.fromMap).toList();
+  }
+
+  /// Transactions matching [filter] (search + filters), newest first.
+  /// The WHERE clause only has `?` placeholders; values go in `whereArgs`.
+  Future<List<TransactionModel>> search(TransactionFilter filter) async {
+    final db = await _helper.database;
+    final (where, args) = filter.toWhere();
+    final rows = await db.query(
+      _table,
+      where: where,
+      whereArgs: args.isEmpty ? null : args,
+      orderBy: 'date_time DESC, id DESC',
+    );
     return rows.map(TransactionModel.fromMap).toList();
   }
 
