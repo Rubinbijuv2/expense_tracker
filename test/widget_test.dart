@@ -24,6 +24,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.bar_chart_outlined));
     await tester.pumpAndSettle();
     expect(tester.widget<NavigationBar>(nav).selectedIndex, 2);
-    expect(find.text('Charts and exports will appear here.'), findsOneWidget);
+    expect(find.byTooltip('Export CSV'), findsOneWidget);
+    expect(find.byTooltip('Export PDF'), findsOneWidget);
   });
 }

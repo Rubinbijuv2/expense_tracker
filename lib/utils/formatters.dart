@@ -48,3 +48,11 @@ int? parseToPaise(String? text) {
 
 /// DateTime → 'YYYY-MM', the month key used by the budgets table.
 String monthKey(DateTime date) => DateFormat('yyyy-MM').format(date);
+
+// Short Indian-style amounts for chart axes, without decimals.
+final NumberFormat _compactRupees =
+    NumberFormat.compactSimpleCurrency(locale: 'en_IN', name: 'INR');
+
+/// Short label for chart axes: 120000 paise → "₹1.2K", 25000000 → "₹2.5L".
+String formatPaiseCompact(int paise) =>
+    paise == 0 ? '₹0' : _compactRupees.format(paise / 100);
