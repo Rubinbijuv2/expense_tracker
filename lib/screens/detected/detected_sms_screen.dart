@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/category_model.dart';
 import '../../models/detected_sms.dart';
 import '../../providers/detected_sms_provider.dart';
 import '../../providers/transaction_provider.dart';
@@ -8,8 +9,10 @@ import '../../utils/formatters.dart';
 import '../../widgets/placeholder_body.dart';
 import '../add_edit/add_edit_screen.dart';
 import 'detected_sms_card.dart';
+import 'merge_card.dart';
 
-/// All pending suggestions made from bank SMS.
+/// All pending suggestions made from bank SMS. A Bank + Receipt pair about
+/// the same payment is shown as one merge card.
 class DetectedSmsScreen extends StatelessWidget {
   const DetectedSmsScreen({super.key});
 
@@ -22,6 +25,7 @@ class DetectedSmsScreen extends StatelessWidget {
     final detected = context.watch<DetectedSmsProvider>();
     final txns = context.watch<TransactionProvider>();
     final pending = detected.pending;
+    final cards = detected.cards;
 
     return Scaffold(
       appBar: AppBar(
@@ -52,19 +56,37 @@ class DetectedSmsScreen extends StatelessWidget {
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: pending.length,
+                      itemCount: cards.length,
                       itemBuilder: (context, i) {
-                        final sms = pending[i];
-                        final cat = sms.guessedCategoryId == null
-                            ? null
-                            : txns.categoryById(sms.guessedCategoryId!);
+                        final card = cards[i];
+                        CategoryModel? catOf(DetectedSms s) =>
+                            s.guessedCategoryId == null
+                                ? null
+                                : txns.categoryById(s.guessedCategoryId!);
+                        if (card.length == 2) {
+                          final (bank, receipt) = (card[0], card[1]);
+                          return MergeCard(
+                            key: ValueKey('pair-${bank.id}'),
+                            bank: bank,
+                            receipt: receipt,
+                            receiptCategory: catOf(receipt),
+                            onMerge: () => _merge(context, bank, receipt),
+                            onNotSame: () => detected.unpair(bank, receipt),
+                            onIgnoreBoth: () async {
+                              await detected.ignore(bank);
+                              await detected.ignore(receipt);
+                            },
+                          );
+                        }
+                        final sms = card.first;
                         return DetectedSmsCard(
                           key: ValueKey(sms.id),
                           sms: sms,
-                          category: cat,
+                          category: catOf(sms),
                           onSave: () => _save(context, sms),
                           onEdit: () => AddEditScreen.openFromSms(context, sms),
                           onIgnore: () => _ignore(context, sms),
+                          onIgnoreSender: () => _ignoreSender(context, sms),
                         );
                       },
                     ),
@@ -108,6 +130,54 @@ class DetectedSmsScreen extends StatelessWidget {
         action: SnackBarAction(
           label: 'Undo',
           onPressed: () => provider.restorePending(sms),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _merge(
+    BuildContext context,
+    DetectedSms bank,
+    DetectedSms receipt,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await context.read<DetectedSmsProvider>().merge(bank, receipt);
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Merged into one card. Tap Save to add it.')),
+    );
+  }
+
+  /// "Always ignore this sender" (rule 14): asks first, because it also
+  /// removes every pending card from that sender.
+  Future<void> _ignoreSender(BuildContext context, DetectedSms sms) async {
+    final provider = context.read<DetectedSmsProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Always ignore ${sms.sender}?'),
+        content: const Text(
+          'New SMS from this sender will not be detected, and its waiting '
+          'cards are removed. Saved transactions are not changed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Always ignore'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final n = await provider.ignoreSender(sms.sender);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          '${sms.sender} ignored · $n card${n == 1 ? '' : 's'} removed',
         ),
       ),
     );

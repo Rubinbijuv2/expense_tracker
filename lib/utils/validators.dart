@@ -16,3 +16,11 @@ String? validateAmount(String? text) {
 /// A category must be picked.
 String? validateCategory(int? categoryId) =>
     categoryId == null ? 'Pick a category' : null;
+
+/// "My accounts": exactly the last 4 digits of an account or card number.
+String? validateLast4(String? text) {
+  final t = text?.trim() ?? '';
+  if (t.isEmpty) return 'Enter the last 4 digits';
+  if (!RegExp(r'^\d{4}$').hasMatch(t)) return 'Use exactly 4 digits, e.g. 1234';
+  return null;
+}

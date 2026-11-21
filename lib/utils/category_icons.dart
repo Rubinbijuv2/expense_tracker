@@ -15,6 +15,17 @@ const Map<String, IconData> categoryIcons = {
   'movie': Icons.movie,
   'account_balance_wallet': Icons.account_balance_wallet,
   'category': Icons.category,
+  // Version 2 default categories.
+  'account_balance': Icons.account_balance,
+  'two_wheeler': Icons.two_wheeler,
+  'credit_score': Icons.credit_score,
+  'groups': Icons.groups,
+  'menu_book': Icons.menu_book,
+  'payments': Icons.payments,
+  'currency_exchange': Icons.currency_exchange,
+  'redeem': Icons.redeem,
+  'volunteer_activism': Icons.volunteer_activism,
+  'more_horiz': Icons.more_horiz,
   // Extra choices for custom categories.
   'local_cafe': Icons.local_cafe,
   'local_grocery_store': Icons.local_grocery_store,

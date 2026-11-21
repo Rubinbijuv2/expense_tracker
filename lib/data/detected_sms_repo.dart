@@ -76,6 +76,70 @@ class DetectedSmsRepo {
     return rows.isNotEmpty;
   }
 
+  /// "Always ignore this sender": marks that sender's pending rows as
+  /// ignored. Returns their ids (so their notifications can be removed).
+  Future<List<int>> ignorePendingFromSender(String sender) async {
+    final db = await _helper.database;
+    final from = sender.trim().toUpperCase();
+    final rows = await db.query(
+      _table,
+      columns: ['id'],
+      where: 'status = ? AND UPPER(sender) = ?',
+      whereArgs: ['pending', from],
+    );
+    await db.update(
+      _table,
+      {'status': 'ignored'},
+      where: 'status = ? AND UPPER(sender) = ?',
+      whereArgs: ['pending', from],
+    );
+    return [for (final r in rows) r['id'] as int];
+  }
+
+  /// Rule 12: a pending, not-yet-paired SMS of kind [otherKind] ('bank' or
+  /// 'receipt') with the same amount within [window] of [at]. The closest
+  /// in time wins.
+  Future<DetectedSms?> findPairPartner(
+    int amountPaise,
+    String otherKind,
+    DateTime at, {
+    Duration window = const Duration(minutes: 30),
+  }) async {
+    final db = await _helper.database;
+    final rows = await db.query(
+      _table,
+      where:
+          'status = ? AND kind = ? AND amount_paise = ? AND duplicate_of IS NULL '
+          'AND is_self_transfer = 0 AND received_at >= ? AND received_at <= ?',
+      whereArgs: [
+        'pending',
+        otherKind,
+        amountPaise,
+        at.subtract(window).toIso8601String(),
+        at.add(window).toIso8601String(),
+      ],
+    );
+    final found = rows.map(DetectedSms.fromMap).toList()
+      ..sort(
+        (a, b) => a.receivedAt
+            .difference(at)
+            .abs()
+            .compareTo(b.receivedAt.difference(at).abs()),
+      );
+    return found.isEmpty ? null : found.first;
+  }
+
+  /// Links (or with null, unlinks) one side of a Bank + Receipt pair.
+  Future<int> setDuplicateOf(int id, int? otherId) async {
+    final db = await _helper.database;
+    return db.update(
+      _table,
+      {'duplicate_of': otherId},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   /// True if a *pending* SMS with the same amount and merchant arrived
   /// within [window] of [at] (PLAN.md rule 10). Merchant is case-insensitive.
   Future<bool> existsSimilarPending(

@@ -134,6 +134,10 @@ class _AddEditScreenState extends State<AddEditScreen> {
       source: sms != null ? 'sms' : (old?.source ?? 'manual'),
       smsId: old?.smsId ?? sms?.id,
       createdAt: old?.createdAt,
+      // Keep the links an edit can't change on this screen.
+      recurringId: old?.recurringId,
+      refundOfId: old?.refundOfId,
+      isSelfTransfer: old?.isSelfTransfer ?? sms?.isSelfTransfer ?? false,
     );
 
     setState(() => _saving = true);

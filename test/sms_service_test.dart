@@ -1,12 +1,18 @@
 import 'package:expense_tracker/data/category_repo.dart';
 import 'package:expense_tracker/data/detected_sms_repo.dart';
+import 'package:expense_tracker/data/ignored_sender_repo.dart';
 import 'package:expense_tracker/data/merchant_rule_repo.dart';
+import 'package:expense_tracker/data/own_account_repo.dart';
 import 'package:expense_tracker/data/transaction_repo.dart';
 import 'package:expense_tracker/models/category_model.dart';
 import 'package:expense_tracker/models/detected_sms.dart';
 import 'package:expense_tracker/models/merchant_rule.dart';
+import 'package:expense_tracker/models/transaction_model.dart';
 import 'package:expense_tracker/providers/detected_sms_provider.dart';
+import 'package:expense_tracker/services/budget_alert_service.dart';
 import 'package:expense_tracker/services/notification_service.dart';
+import 'package:expense_tracker/services/sms_action_service.dart';
+import 'package:expense_tracker/services/sms_recheck.dart';
 import 'package:expense_tracker/services/sms_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -28,6 +34,62 @@ class FakeSmsRepo extends DetectedSmsRepo {
       rows.any((r) => r.body == body);
 
   @override
+  Future<DetectedSms?> getById(int id) async =>
+      rows.where((r) => r.id == id).firstOrNull;
+
+  @override
+  Future<int> update(DetectedSms sms) async {
+    final i = rows.indexWhere((r) => r.id == sms.id);
+    rows[i] = sms;
+    return 1;
+  }
+
+  @override
+  Future<int> delete(int id) async {
+    rows.removeWhere((r) => r.id == id);
+    return 1;
+  }
+
+  @override
+  Future<int> updateStatus(int id, String status) async {
+    final i = rows.indexWhere((r) => r.id == id);
+    rows[i] = rows[i].copyWith(status: status);
+    return 1;
+  }
+
+  @override
+  Future<List<DetectedSms>> getPending({int? limit}) async =>
+      rows.where((r) => r.isPending).toList()
+        ..sort((a, b) => b.receivedAt.compareTo(a.receivedAt));
+
+  @override
+  Future<int> setDuplicateOf(int id, int? otherId) async {
+    final i = rows.indexWhere((r) => r.id == id);
+    rows[i] = otherId == null
+        ? rows[i].copyWith(clearDuplicateOf: true)
+        : rows[i].copyWith(duplicateOf: otherId);
+    return 1;
+  }
+
+  @override
+  Future<DetectedSms?> findPairPartner(
+    int amountPaise,
+    String otherKind,
+    DateTime at, {
+    Duration window = const Duration(minutes: 30),
+  }) async => rows
+      .where(
+        (r) =>
+            r.isPending &&
+            r.kind == otherKind &&
+            r.amountPaise == amountPaise &&
+            r.duplicateOf == null &&
+            !r.isSelfTransfer &&
+            r.receivedAt.difference(at).abs() <= window,
+      )
+      .firstOrNull;
+
+  @override
   Future<bool> existsSimilarPending(
     int amountPaise,
     String merchant,
@@ -45,6 +107,13 @@ class FakeSmsRepo extends DetectedSmsRepo {
 class FakeTxnRepo extends TransactionRepo {
   /// (amount, merchant, time) of existing transactions.
   final List<(int, String, DateTime)> existing = [];
+  final List<TransactionModel> inserted = [];
+
+  @override
+  Future<int> insert(TransactionModel txn) async {
+    inserted.add(txn);
+    return inserted.length;
+  }
 
   @override
   Future<bool> existsSimilar(
@@ -65,6 +134,29 @@ class FakeRuleRepo extends MerchantRuleRepo {
 
   @override
   Future<List<MerchantRule>> getAll() async => rules;
+}
+
+class FakeIgnoredRepo extends IgnoredSenderRepo {
+  final Set<String> senders = {};
+
+  @override
+  Future<Set<String>> getAll() async => senders;
+}
+
+class FakeOwnRepo extends OwnAccountRepo {
+  final Set<String> last4 = {};
+
+  @override
+  Future<Set<String>> getAllLast4() async => last4;
+}
+
+/// Records budget checks instead of touching the database.
+class FakeBudgetAlerts extends BudgetAlertService {
+  FakeBudgetAlerts() : super(notify: (_, _, _) async {});
+  final List<TransactionModel> checked = [];
+
+  @override
+  Future<void> checkAfterSave(TransactionModel txn) async => checked.add(txn);
 }
 
 class FakeCategoryRepo extends CategoryRepo {
@@ -97,6 +189,20 @@ class FakeCategoryRepo extends CategoryRepo {
       color: 0,
       type: 'expense',
     ),
+    CategoryModel(
+      id: 12,
+      name: 'Vehicle',
+      icon: 'two_wheeler',
+      color: 0,
+      type: 'expense',
+    ),
+    CategoryModel(
+      id: 16,
+      name: 'Money received',
+      icon: 'payments',
+      color: 0,
+      type: 'income',
+    ),
   ];
 
   @override
@@ -121,6 +227,8 @@ void main() {
   late FakeSmsRepo smsRepo;
   late FakeTxnRepo txnRepo;
   late FakeRuleRepo ruleRepo;
+  late FakeIgnoredRepo ignoredRepo;
+  late FakeOwnRepo ownRepo;
   late SmsService service;
   final now = DateTime(2026, 11, 20, 13, 5);
 
@@ -128,11 +236,15 @@ void main() {
     smsRepo = FakeSmsRepo();
     txnRepo = FakeTxnRepo();
     ruleRepo = FakeRuleRepo();
+    ignoredRepo = FakeIgnoredRepo();
+    ownRepo = FakeOwnRepo();
     service = SmsService(
       smsRepo: smsRepo,
       transactionRepo: txnRepo,
       ruleRepo: ruleRepo,
       categoryRepo: FakeCategoryRepo(),
+      ignoredRepo: ignoredRepo,
+      ownRepo: ownRepo,
     );
   });
 
@@ -263,7 +375,7 @@ void main() {
       expect(saved!.guessedCategoryId, 2);
     });
 
-    test('income gets an income category (Salary)', () async {
+    test('income gets the default income category (Money received)', () async {
       final saved = await process(
         'VM-ICICIB',
         'Dear Customer, Rs.649.00 received in your account XX901 from '
@@ -271,7 +383,7 @@ void main() {
         now,
       );
       expect(saved!.type, 'income');
-      expect(saved.guessedCategoryId, 9);
+      expect(saved.guessedCategoryId, 16);
     });
 
     test('unknown expense merchant falls back to Others', () async {
@@ -326,5 +438,183 @@ void main() {
     expect(t.amountPaise, 45000);
     expect(t.dateTime, now);
     expect(t.paymentMode, 'UPI'); // default when the SMS didn't say
+  });
+
+  // ---- Step 6b ---------------------------------------------------------------
+
+  const vaahanReceipt =
+      'Payment received for Vehicle KL07AB1234 PUC fee Rs 120.00. '
+      'Transaction ID VH998877. Thank you, Team Vaahan';
+  const vaahanBank =
+      'Rs.120.00 debited from A/c XX1234 on 20-11-26 to VPA '
+      'parivahan.pay@sbi UPI Ref No 632400001200';
+  const ownTransfer =
+      'Rs.5,000.00 sent from A/c XX1234 to A/c XX5678 via IMPS on 20-11-26. '
+      'Ref No 445566';
+
+  group('step 6b pipeline', () {
+    test('kind is stored on the pending row', () async {
+      final bank = await process(swiggySender, swiggyBody, now);
+      expect(bank!.kind, 'bank');
+      expect(bank.kindLabel, 'Bank');
+      final receipt = await process('AD-VAAHAN-S', vaahanReceipt, now);
+      expect(receipt!.kind, 'receipt');
+      expect(receipt.type, 'expense'); // "payment received" = shop got it
+      expect(receipt.guessedCategoryId, 12); // Vehicle
+    });
+
+    test('a sender on the ignore list is not stored', () async {
+      ignoredRepo.senders.add('AX-HDFCBK');
+      expect(
+        await reason(swiggySender, swiggyBody, now),
+        'sender is on your ignore list',
+      );
+      expect(smsRepo.rows, isEmpty);
+    });
+
+    test('transfer to one of my accounts is a self transfer', () async {
+      ownRepo.last4.add('5678');
+      final saved = await process('AX-HDFCBK-S', ownTransfer, now);
+      expect(saved!.isSelfTransfer, isTrue);
+    });
+
+    test('same transfer without My accounts is normal spending', () async {
+      final saved = await process('AX-HDFCBK-S', ownTransfer, now);
+      expect(saved!.isSelfTransfer, isFalse);
+    });
+
+    test('Bank + Receipt, same amount within 30 minutes → paired', () async {
+      final receipt = await process('AD-VAAHAN-S', vaahanReceipt, now);
+      final bank = await process(
+        'JD-SBIUPI-S',
+        vaahanBank,
+        now.add(const Duration(minutes: 25)),
+      );
+      expect(bank!.duplicateOf, receipt!.id);
+      expect(smsRepo.rows.first.duplicateOf, bank.id); // linked both ways
+      final cards = DetectedSmsProvider.groupPairs(
+        await smsRepo.getPending(),
+      );
+      expect(cards, hasLength(1));
+      expect(cards.single.map((s) => s.kind), ['bank', 'receipt']);
+    });
+
+    test('31 minutes apart → two separate cards', () async {
+      await process('AD-VAAHAN-S', vaahanReceipt, now);
+      final bank = await process(
+        'JD-SBIUPI-S',
+        vaahanBank,
+        now.add(const Duration(minutes: 31)),
+      );
+      expect(bank!.duplicateOf, isNull);
+      expect(
+        DetectedSmsProvider.groupPairs(await smsRepo.getPending()),
+        hasLength(2),
+      );
+    });
+  });
+
+  group('re-check old pending cards', () {
+    DetectedSms oldRow(int id, String sender, String body, String type) =>
+        DetectedSms(
+          id: id,
+          sender: sender,
+          body: body,
+          amountPaise: 100,
+          type: type,
+          merchant: 'Old',
+          receivedAt: now.add(Duration(minutes: id)),
+        );
+
+    test('wrong cards are fixed, rejected ones are deleted', () async {
+      smsRepo.rows.addAll([
+        // Old parser kept this; v2 drops "reward points".
+        oldRow(
+          1,
+          'AX-HDFCBK-S',
+          'You have earned 150 reward points on your purchase of Rs 1,500 '
+              'at Croma. Redeem now.',
+          'income',
+        ),
+        // Old parser called this income.
+        oldRow(2, 'AD-VAAHAN-S', vaahanReceipt, 'income'),
+      ]);
+      final report = await SmsRecheck(
+        smsRepo: smsRepo,
+        ignoredRepo: ignoredRepo,
+        service: service,
+      ).run();
+
+      expect(report.removedIds, [1]);
+      expect(report.updated, 1);
+      final fixed = smsRepo.rows.single;
+      expect(fixed.id, 2);
+      expect(fixed.type, 'expense');
+      expect(fixed.kind, 'receipt');
+      expect(fixed.amountPaise, 12000);
+      expect(fixed.merchant, 'Vaahan');
+      expect(fixed.status, 'pending');
+    });
+  });
+
+  group('notification Save / Ignore buttons', () {
+    late FakeBudgetAlerts alerts;
+    late SmsActionService actions;
+
+    setUp(() {
+      alerts = FakeBudgetAlerts();
+      actions = SmsActionService(
+        smsRepo: smsRepo,
+        transactionRepo: txnRepo,
+        categoryRepo: FakeCategoryRepo(),
+        budgetAlerts: alerts,
+      );
+    });
+
+    test('Save adds the transaction and marks the SMS saved', () async {
+      final sms = await process(swiggySender, swiggyBody, now);
+      expect(await actions.handle(SmsActionService.saveAction, sms!.id!), isTrue);
+      expect(txnRepo.inserted.single.amountPaise, 45000);
+      expect(txnRepo.inserted.single.categoryId, 1);
+      expect(txnRepo.inserted.single.source, 'sms');
+      expect(smsRepo.rows.single.status, 'saved');
+      expect(alerts.checked, hasLength(1)); // budget alert still checked
+    });
+
+    test('Ignore marks it ignored; a second tap does nothing', () async {
+      final sms = await process(swiggySender, swiggyBody, now);
+      expect(
+        await actions.handle(SmsActionService.ignoreAction, sms!.id!),
+        isTrue,
+      );
+      expect(smsRepo.rows.single.status, 'ignored');
+      expect(
+        await actions.handle(SmsActionService.saveAction, sms.id!),
+        isFalse,
+      );
+      expect(txnRepo.inserted, isEmpty);
+    });
+
+    test('a saved self transfer keeps its flag', () async {
+      ownRepo.last4.add('5678');
+      final sms = await process('AX-HDFCBK-S', ownTransfer, now);
+      await actions.handle(SmsActionService.saveAction, sms!.id!);
+      expect(txnRepo.inserted.single.isSelfTransfer, isTrue);
+    });
+
+    test('paired notification text', () {
+      final sms = DetectedSms(
+        sender: 'JD-SBIUPI-S',
+        body: 'x',
+        amountPaise: 12000,
+        type: 'expense',
+        merchant: 'Parivahan Pay',
+        receivedAt: now,
+      );
+      expect(
+        NotificationService.pairedText(sms),
+        '₹120 to Parivahan Pay — matches another SMS. Tap to merge',
+      );
+    });
   });
 }

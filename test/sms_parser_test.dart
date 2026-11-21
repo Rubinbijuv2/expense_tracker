@@ -71,6 +71,13 @@ void main() {
   group('sample_sms_v2.txt', () {
     final cases = _loadCases('test/fixtures/sample_sms_v2.txt');
 
+    test('Test SMS screen v2 samples match the fixture file', () {
+      expect(
+        sampleSmsV2List.map((s) => '${s.sender} | ${s.body}').toList(),
+        cases.map((c) => '${c.sender} | ${c.body}').toList(),
+      );
+    });
+
     test('fixture file has both kinds of cases', () {
       expect(cases.where((c) => c.expected == 'IGNORE'), isNotEmpty);
       expect(cases.where((c) => c.expected != 'IGNORE'), isNotEmpty);

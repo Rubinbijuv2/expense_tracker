@@ -128,6 +128,7 @@ class HistoryProvider extends ChangeNotifier {
     var spent = 0;
     var income = 0;
     for (final t in txns) {
+      if (!t.counts) continue; // self transfers are never counted
       if (t.isExpense) {
         spent += t.amountPaise;
       } else {

@@ -90,7 +90,7 @@ void main() {
   });
 
   test('every default category has a known icon', () {
-    expect(defaultCategories.length, 10);
+    expect(defaultCategories.length, 20); // PLAN.md rule 11
     for (final c in defaultCategories) {
       expect(categoryIcons.containsKey(c.icon), isTrue, reason: c.name);
     }

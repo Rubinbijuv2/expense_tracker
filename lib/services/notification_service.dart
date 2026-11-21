@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../models/detected_sms.dart';
 import '../utils/formatters.dart';
+import 'sms_action_service.dart';
 
 /// Shows local notifications (no internet: they are created on the phone).
 ///
@@ -52,7 +53,16 @@ class NotificationService {
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       ),
-      onDidReceiveNotificationResponse: onTap == null ? null : (_) => onTap(),
+      // Tapping the notification itself (not a button) opens Detected SMS.
+      onDidReceiveNotificationResponse: onTap == null
+          ? null
+          : (r) {
+              if (r.actionId == null) onTap();
+            },
+      // The Save / Ignore buttons run here, without opening the app.
+      // Always passed (also from the background SMS handler) so Android
+      // keeps knowing which Dart function to call.
+      onDidReceiveBackgroundNotificationResponse: onNotificationAction,
     );
     _ready = true;
   }
@@ -63,12 +73,31 @@ class NotificationService {
     return details?.didNotificationLaunchApp ?? false;
   }
 
-  /// "₹450 paid to Swiggy — tap to add"
+  /// "₹450 paid to Swiggy — tap to add", with **Save** and **Ignore**
+  /// buttons (rule 14). Self transfers get no notification (they are not
+  /// spending). A Bank + Receipt pair asks the user to open the app instead,
+  /// because only the Detected SMS screen can merge them.
   Future<void> showDetected(DetectedSms sms) async {
+    if (sms.isSelfTransfer || sms.id == null) return;
+    final paired = sms.duplicateOf != null;
     await _safeShow(
-      _smsIdOffset + (sms.id ?? 0),
-      'New ${sms.type} detected',
-      detectedText(sms),
+      _smsIdOffset + sms.id!,
+      paired ? 'Looks like the same payment' : 'New ${sms.type} detected',
+      paired ? pairedText(sms) : detectedText(sms),
+      payload: '${sms.id}',
+      actions: paired
+          ? null
+          : [
+              if (sms.guessedCategoryId != null)
+                const AndroidNotificationAction(
+                  SmsActionService.saveAction,
+                  'Save',
+                ),
+              const AndroidNotificationAction(
+                SmsActionService.ignoreAction,
+                'Ignore',
+              ),
+            ],
     );
   }
 
@@ -118,14 +147,27 @@ class NotificationService {
     String title,
     String body, {
     AndroidNotificationDetails channel = _smsChannel,
+    String? payload,
+    List<AndroidNotificationAction>? actions,
   }) async {
     try {
       await init();
+      final android = actions == null
+          ? channel
+          : AndroidNotificationDetails(
+              channel.channelId,
+              channel.channelName,
+              channelDescription: channel.channelDescription,
+              importance: channel.importance,
+              priority: channel.priority,
+              actions: actions,
+            );
       await _plugin.show(
         id: id,
         title: title,
         body: body,
-        notificationDetails: NotificationDetails(android: channel),
+        notificationDetails: NotificationDetails(android: android),
+        payload: payload,
       );
     } catch (e) {
       // Notifications are a bonus: never let them break SMS detection or saving.
@@ -141,6 +183,11 @@ class NotificationService {
         ? '$amount received from $merchant — tap to add'
         : '$amount paid to $merchant — tap to add';
   }
+
+  /// "₹450 to Swiggy — matches another SMS. Tap to merge"
+  static String pairedText(DetectedSms sms) =>
+      '${shortAmount(sms.amountPaise)} ${sms.type == 'income' ? 'from' : 'to'} '
+      '${sms.merchant ?? 'Unknown'} — matches another SMS. Tap to merge';
 
   /// Like formatPaise but drops ".00": 45000 → "₹450", 45050 → "₹450.50".
   static String shortAmount(int paise) {

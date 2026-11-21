@@ -53,6 +53,7 @@ class DashboardSummary {
         continue;
       }
       if (recent.length < recentCount) recent.add(t);
+      if (!t.counts) continue; // self transfer: listed, never counted
       if (t.isExpense) {
         spent += t.amountPaise;
         perCategory[t.categoryId] =

@@ -76,7 +76,7 @@ class BudgetProvider extends ChangeNotifier {
     var total = 0;
     final perCat = <int, int>{};
     for (final t in _txns.transactions) {
-      if (!t.isExpense) continue;
+      if (!t.isExpense || !t.counts) continue; // skip income, self transfers
       if (t.dateTime.year != _month.year || t.dateTime.month != _month.month) {
         continue;
       }

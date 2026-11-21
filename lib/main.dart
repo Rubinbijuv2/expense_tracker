@@ -6,6 +6,7 @@ import 'providers/budget_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/detected_sms_provider.dart';
 import 'providers/history_provider.dart';
+import 'providers/own_accounts_provider.dart';
 import 'providers/report_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/transaction_provider.dart';
@@ -71,6 +72,7 @@ class ExpenseTrackerApp extends StatelessWidget {
     // BudgetProvider: budgets of the month chosen on the Budgets screen.
     // HistoryProvider: search text, filters and matching rows for History.
     // ReportProvider: month, charts data and CSV/PDF export for Reports.
+    // OwnAccountsProvider: Settings → My accounts (self-transfer detection).
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: settings),
@@ -96,6 +98,7 @@ class ExpenseTrackerApp extends StatelessWidget {
           create: (context) =>
               ReportProvider(context.read<TransactionProvider>()),
         ),
+        ChangeNotifierProvider(create: (_) => OwnAccountsProvider()..load()),
       ],
       // Consumer rebuilds only the MaterialApp when the theme setting changes.
       child: Consumer<SettingsProvider>(

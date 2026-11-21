@@ -88,8 +88,10 @@ class _TestSmsScreenState extends State<TestSmsScreen> {
               labelText: 'Load sample',
               border: OutlineInputBorder(),
             ),
+            // Version 1 samples first, then the v2 ones (kind labels,
+            // receipts, refunds, self transfers, a Bank + Receipt pair).
             items: [
-              for (final s in sampleSmsList)
+              for (final s in [...sampleSmsList, ...sampleSmsV2List])
                 DropdownMenuItem(
                   value: s,
                   child: Text(s.label, overflow: TextOverflow.ellipsis),
@@ -174,8 +176,11 @@ class _ResultCard extends StatelessWidget {
             leading: const Icon(Icons.check_circle_outline),
             title: Text(text),
             subtitle: Text(
-              '${saved.type} · ${saved.paymentMode ?? 'mode ?'}'
+              '${saved.kindLabel} · ${saved.type} · '
+              '${saved.paymentMode ?? 'mode ?'}'
               '${saved.accountLast4 == null ? '' : ' · A/c ••${saved.accountLast4}'}'
+              '${saved.isSelfTransfer ? ' · SELF TRANSFER (not counted)' : ''}'
+              '${saved.duplicateOf != null ? ' · paired with another SMS (merge card)' : ''}'
               ' · saved as pending',
             ),
           ),

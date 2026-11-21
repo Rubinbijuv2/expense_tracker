@@ -8,6 +8,7 @@ import '../utils/category_icons.dart';
 import '../utils/formatters.dart';
 
 /// One transaction row: category icon, name, note/merchant, mode, time, amount.
+/// A self transfer is drawn grey with its amount struck through.
 class TransactionTile extends StatelessWidget {
   const TransactionTile({
     super.key,
@@ -24,7 +25,9 @@ class TransactionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final color = Color(category?.color ?? 0xFF757575);
+    final self = txn.isSelfTransfer; // shown greyed, never counted
     final details = [
+      if (self) 'Self transfer',
       if ((txn.merchant ?? '').isNotEmpty) txn.merchant!,
       if ((txn.note ?? '').isNotEmpty) txn.note!,
       txn.paymentMode,
@@ -34,16 +37,22 @@ class TransactionTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       leading: CircleAvatar(
-        backgroundColor: color.withValues(alpha: 0.15),
-        child: Icon(iconFor(category?.icon ?? ''), color: color),
+        backgroundColor: color.withValues(alpha: self ? 0.06 : 0.15),
+        child: Icon(
+          self ? Icons.swap_horiz : iconFor(category?.icon ?? ''),
+          color: self ? scheme.outline : color,
+        ),
       ),
       title: Text(category?.name ?? 'Unknown'),
       subtitle: Text(details, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: Text(
         '${txn.isExpense ? '−' : '+'}${formatPaise(txn.amountPaise)}',
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: txn.isExpense ? scheme.error : Colors.green.shade600,
+              color: self
+                  ? scheme.outline
+                  : (txn.isExpense ? scheme.error : Colors.green.shade600),
               fontWeight: FontWeight.w600,
+              decoration: self ? TextDecoration.lineThrough : null,
             ),
       ),
     );

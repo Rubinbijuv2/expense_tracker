@@ -46,6 +46,12 @@
                 <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
             </intent-filter>
         </receiver>
+        <!-- flutter_local_notifications: handles the Save / Ignore buttons on a
+             detected-SMS notification without opening the app. Not exported,
+             so other apps can't trigger it. -->
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

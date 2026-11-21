@@ -112,8 +112,8 @@ class CategoryGuesser {
         const CategoryGuess.fromName(fallback);
   }
 
-  /// Merchant-only guess (rules → keyword map → 'Others'). Used by
-  /// sms_service until step 6b switches it to [guessSms].
+  /// Merchant-only guess (rules → keyword map → 'Others'). The SMS pipeline
+  /// uses [guessSms]; this simpler form is kept for merchant-name lookups.
   static CategoryGuess guess(String merchant, List<MerchantRule> rules) {
     final name = merchant.toLowerCase();
     return _fromRules(name, rules) ??

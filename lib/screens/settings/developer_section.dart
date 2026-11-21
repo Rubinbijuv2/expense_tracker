@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/detected_sms_provider.dart';
 import '../../services/demo_data_service.dart';
 import 'data_section.dart';
 import 'test_sms_screen.dart';
 
 /// Hidden Settings rows, shown after tapping "Version" 5 times:
-/// "Load demo data" (for the viva) and the Test SMS screen.
+/// "Load demo data" (for the viva), "Re-check pending SMS" and Test SMS.
 class DeveloperSection extends StatefulWidget {
   const DeveloperSection({super.key});
 
@@ -63,6 +65,24 @@ class _DeveloperSectionState extends State<DeveloperSection> {
     }
   }
 
+  Future<void> _recheck() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final detected = context.read<DetectedSmsProvider>();
+    setState(() => _busy = true);
+    try {
+      final r = await detected.recheckPending();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('${r.updated} cards fixed, ${r.removed} removed'),
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Re-check failed: $e')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -74,6 +94,13 @@ class _DeveloperSectionState extends State<DeveloperSection> {
           title: const Text('Load demo data'),
           subtitle: const Text('Replaces all data with sample transactions'),
           onTap: _loadDemo,
+        ),
+        ListTile(
+          enabled: !_busy,
+          leading: const Icon(Icons.manage_search),
+          title: const Text('Re-check pending SMS'),
+          subtitle: const Text('Run the latest SMS rules on waiting cards'),
+          onTap: _recheck,
         ),
         ListTile(
           enabled: !_busy,

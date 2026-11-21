@@ -90,12 +90,14 @@ class ReportSummary {
 
     for (final t in txns) {
       final tm = DateTime(t.dateTime.year, t.dateTime.month);
-      if (t.isExpense && spentPerMonth.containsKey(tm)) {
+      final counts = t.counts; // false for self transfers
+      if (counts && t.isExpense && spentPerMonth.containsKey(tm)) {
         spentPerMonth[tm] = spentPerMonth[tm]! + t.amountPaise;
       }
       if (tm != m) continue;
 
-      monthTxns.add(t);
+      monthTxns.add(t); // exported, even self transfers (marked there)
+      if (!counts) continue;
       if (!t.isExpense) {
         income += t.amountPaise;
         continue;

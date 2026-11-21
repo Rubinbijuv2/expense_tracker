@@ -10,6 +10,7 @@ import '../categories/categories_screen.dart';
 import 'change_pin_screen.dart';
 import 'data_section.dart';
 import 'developer_section.dart';
+import 'my_accounts_screen.dart';
 
 /// Profile, theme, PIN/fingerprint, categories, budgets, backup and reset.
 class SettingsScreen extends StatefulWidget {
@@ -189,6 +190,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.category_outlined),
             title: const Text('Manage categories'),
             onTap: () => CategoriesScreen.open(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.account_balance_outlined),
+            title: const Text('My accounts'),
+            subtitle: const Text('Your own accounts, to spot self transfers'),
+            onTap: () => MyAccountsScreen.open(context),
           ),
           const _Header('Data'),
           const DataSection(),

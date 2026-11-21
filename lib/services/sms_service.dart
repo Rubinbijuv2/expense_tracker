@@ -5,12 +5,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/category_repo.dart';
 import '../data/detected_sms_repo.dart';
+import '../data/ignored_sender_repo.dart';
 import '../data/merchant_rule_repo.dart';
+import '../data/own_account_repo.dart';
 import '../data/transaction_repo.dart';
 import '../models/category_model.dart';
 import '../models/detected_sms.dart';
 import 'category_guesser.dart';
 import 'notification_service.dart';
+import 'self_transfer.dart';
 import 'sms_parser.dart';
 
 /// Android calls this when a new SMS arrives while the app is in the
@@ -43,8 +46,8 @@ class SmsResult {
 /// Reads bank SMS and turns them into pending suggestions (PLAN.md section 4).
 ///
 /// Steps for every SMS: sender filter + parse (sms_parser) → duplicate check
-/// (rule 10) → category guess (category_guesser) → save to detected_sms as
-/// 'pending'. SMS from non-bank senders are dropped at the first step and are
+/// → category guess (category_guesser) → self transfer (rule 13) → Bank +
+/// Receipt pair (rule 12) → save to detected_sms as 'pending'. SMS from non-bank senders are dropped at the first step and are
 /// never stored or logged.
 class SmsService {
   SmsService({
@@ -52,18 +55,25 @@ class SmsService {
     TransactionRepo? transactionRepo,
     MerchantRuleRepo? ruleRepo,
     CategoryRepo? categoryRepo,
+    IgnoredSenderRepo? ignoredRepo,
+    OwnAccountRepo? ownRepo,
   }) : _smsRepo = smsRepo ?? DetectedSmsRepo(),
        _txnRepo = transactionRepo ?? TransactionRepo(),
        _ruleRepo = ruleRepo ?? MerchantRuleRepo(),
-       _categoryRepo = categoryRepo ?? CategoryRepo();
+       _categoryRepo = categoryRepo ?? CategoryRepo(),
+       _ignoredRepo = ignoredRepo ?? IgnoredSenderRepo(),
+       _ownRepo = ownRepo ?? OwnAccountRepo();
 
   final DetectedSmsRepo _smsRepo;
   final TransactionRepo _txnRepo;
   final MerchantRuleRepo _ruleRepo;
   final CategoryRepo _categoryRepo;
+  final IgnoredSenderRepo _ignoredRepo;
+  final OwnAccountRepo _ownRepo;
 
   static const int scanDays = 30;
   static const Duration duplicateWindow = Duration(minutes: 2);
+  static const Duration pairWindow = Duration(minutes: 30);
   static const String _scanDoneKey = 'sms_inbox_scan_done';
 
   // A getter, so tests that never touch the phone don't create it.
@@ -176,13 +186,17 @@ class SmsService {
       return const SmsResult.ignored('empty SMS');
     }
 
-    // Rules 1–8. Non-bank senders, OTPs, offers etc. stop here.
-    final parseResult = SmsParser.parseWithReason(sender, body);
+    // Rules 1–9. Non-bank senders, ignored senders, OTPs, offers etc. stop here.
+    final parseResult = SmsParser.parseWithReason(
+      sender,
+      body,
+      ignoredSenders: await _ignoredRepo.getAll(),
+    );
     final parsed = parseResult.sms;
     if (parsed == null) return SmsResult.ignored(parseResult.ignoredReason!);
 
-    // Rule 10: same SMS text already stored, or same amount + merchant
-    // within ±2 minutes (e.g. the bank and the UPI app both sent an SMS).
+    // Rule 12: same SMS text already stored. Also: same amount + merchant
+    // within ±2 minutes (the bank and the UPI app both sent an SMS).
     if (await _smsRepo.existsByBody(parsed.body)) {
       return const SmsResult.ignored('duplicate (same SMS already stored)');
     }
@@ -207,7 +221,30 @@ class SmsService {
       );
     }
 
-    final sms = DetectedSms(
+    final sms = await buildPending(parsed, receivedAt);
+    final id = await _smsRepo.insert(sms);
+    final saved = sms.copyWith(id: id);
+    // Link both sides of a Bank + Receipt pair (shown as one merge card).
+    if (saved.duplicateOf != null) {
+      await _smsRepo.setDuplicateOf(saved.duplicateOf!, id);
+    }
+    return SmsResult.saved(saved);
+  }
+
+  /// Turns a parsed SMS into a pending row: category guess (rule 10),
+  /// self transfer (rule 13) and Bank + Receipt partner (rule 12).
+  Future<DetectedSms> buildPending(
+    ParsedSms parsed,
+    DateTime receivedAt, {
+    int? id,
+  }) async {
+    final isSelf = SelfTransfer.detect(
+      parsed.body,
+      parsed.accountLast4,
+      await _ownRepo.getAllLast4(),
+    );
+    return DetectedSms(
+      id: id,
       sender: parsed.sender,
       body: parsed.body,
       amountPaise: parsed.amountPaise,
@@ -215,26 +252,50 @@ class SmsService {
       merchant: parsed.merchant,
       accountLast4: parsed.accountLast4,
       paymentMode: parsed.paymentMode,
-      guessedCategoryId: await _guessCategoryId(parsed.merchant, parsed.type),
+      guessedCategoryId: await _guessCategoryId(parsed),
       receivedAt: receivedAt,
+      kind: parsed.kind,
+      isSelfTransfer: isSelf,
+      duplicateOf: isSelf ? null : await _findPartnerId(parsed, receivedAt),
     );
-    final id = await _smsRepo.insert(sms);
-    return SmsResult.saved(sms.copyWith(id: id));
   }
 
-  /// Rule 9, plus a safety net: the guessed category must match the type.
-  /// Income falls back to the first income category (Salary);
+  /// Rule 12: a pending SMS of the other kind (bank ↔ receipt) with the
+  /// same amount within 30 minutes. 'check' SMS are never paired.
+  Future<int?> _findPartnerId(ParsedSms parsed, DateTime at) async {
+    final other = switch (parsed.kind) {
+      'bank' => 'receipt',
+      'receipt' => 'bank',
+      _ => null,
+    };
+    if (other == null) return null;
+    final partner = await _smsRepo.findPairPartner(
+      parsed.amountPaise,
+      other,
+      at,
+      window: pairWindow,
+    );
+    return partner?.id;
+  }
+
+  /// Rule 10, plus a safety net: the guessed category must match the type.
+  /// Income falls back to 'Money received' (or any income category);
   /// expense falls back to 'Others'.
-  Future<int?> _guessCategoryId(String merchant, String type) async {
-    final guess = CategoryGuesser.guess(merchant, await _ruleRepo.getAll());
+  Future<int?> _guessCategoryId(ParsedSms parsed) async {
+    final guess = CategoryGuesser.guessSms(parsed, await _ruleRepo.getAll());
     CategoryModel? category = guess.isFromRule
         ? await _categoryRepo.getById(guess.categoryId!)
         : await _categoryRepo.getByName(guess.categoryName!);
 
-    if (category == null || category.type != type) {
-      if (type == 'income') {
-        final incomeCats = await _categoryRepo.getByType('income');
-        category = incomeCats.isEmpty ? null : incomeCats.first;
+    if (category == null || category.type != parsed.type) {
+      if (parsed.type == 'income') {
+        category = await _categoryRepo.getByName(
+          CategoryGuesser.incomeFallback,
+        );
+        if (category == null) {
+          final incomeCats = await _categoryRepo.getByType('income');
+          category = incomeCats.isEmpty ? null : incomeCats.first;
+        }
       } else {
         category = await _categoryRepo.getByName(CategoryGuesser.fallback);
       }

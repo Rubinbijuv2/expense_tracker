@@ -95,13 +95,15 @@ class TransactionRepo {
   }
 
   /// Sum of amounts of one [type] ('expense' or 'income') in a month, in paise.
+  /// Self transfers are never counted (PLAN.md rule 13).
   /// Returns 0 when there are no transactions.
   Future<int> totalByType(DateTime month, String type) async {
     final db = await _helper.database;
     final (start, end) = monthRange(month);
     final rows = await db.rawQuery(
       'SELECT COALESCE(SUM(amount_paise), 0) AS total FROM $_table '
-      'WHERE type = ? AND date_time >= ? AND date_time < ?',
+      'WHERE type = ? AND is_self_transfer = 0 '
+      'AND date_time >= ? AND date_time < ?',
       [type, start, end],
     );
     return rows.first['total'] as int? ?? 0;
@@ -117,7 +119,8 @@ class TransactionRepo {
       'SELECT c.id AS category_id, c.name, c.icon, c.color, '
       'SUM(t.amount_paise) AS total_paise '
       'FROM $_table t JOIN ${DbHelper.tCategories} c ON c.id = t.category_id '
-      'WHERE t.type = ? AND t.date_time >= ? AND t.date_time < ? '
+      'WHERE t.type = ? AND t.is_self_transfer = 0 '
+      'AND t.date_time >= ? AND t.date_time < ? '
       'GROUP BY c.id ORDER BY total_paise DESC',
       [type, start, end],
     );
@@ -130,7 +133,7 @@ class TransactionRepo {
     final (start, end) = monthRange(month);
     final rows = await db.rawQuery(
       'SELECT COALESCE(SUM(amount_paise), 0) AS total FROM $_table '
-      "WHERE type = 'expense' AND category_id = ? "
+      "WHERE type = 'expense' AND category_id = ? AND is_self_transfer = 0 "
       'AND date_time >= ? AND date_time < ?',
       [categoryId, start, end],
     );

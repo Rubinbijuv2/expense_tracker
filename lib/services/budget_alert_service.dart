@@ -33,7 +33,7 @@ class BudgetAlertService {
   /// Call after every save. Income never counts towards a budget.
   /// Never throws: a failed alert must not break saving.
   Future<void> checkAfterSave(TransactionModel txn) async {
-    if (!txn.isExpense) return;
+    if (!txn.isExpense || !txn.counts) return; // self transfers don't count
     try {
       final month = DateTime(txn.dateTime.year, txn.dateTime.month);
       final key = monthKey(month);

@@ -141,6 +141,7 @@ class TransactionProvider extends ChangeNotifier {
       if (groups.isEmpty || groups.last.day != day) groups.add(DayGroup(day));
       final g = groups.last;
       g.items.add(t);
+      if (!t.counts) continue; // self transfer: shown, not added up
       if (t.isExpense) {
         g.expensePaise += t.amountPaise;
       } else {

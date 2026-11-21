@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../providers/budget_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/detected_sms_provider.dart';
+import '../../providers/own_accounts_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../services/backup_service.dart';
 
@@ -16,10 +17,12 @@ Future<void> reloadAllData(BuildContext context) async {
   final detected = context.read<DetectedSmsProvider>();
   final budgets = context.read<BudgetProvider>();
   final dash = context.read<DashboardProvider>();
+  final own = context.read<OwnAccountsProvider>();
   await txns.load();
   await detected.load();
   await budgets.load();
   await dash.loadBudget();
+  await own.load();
 }
 
 /// Settings rows: Backup, Restore and Delete all data.

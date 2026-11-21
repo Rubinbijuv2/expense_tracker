@@ -10,6 +10,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
 import '../models/report_summary.dart';
+import '../models/transaction_model.dart';
 import '../utils/formatters.dart';
 
 /// Turns a category id into its name (TransactionProvider gives this).
@@ -33,6 +34,11 @@ class ExportService {
   static String plainRupees(int paise) =>
       '${paise ~/ 100}.${(paise % 100).toString().padLeft(2, '0')}';
 
+  /// "Expense", "Income", or "Self transfer" (not counted in any total).
+  static String typeLabel(TransactionModel t) => t.isSelfTransfer
+      ? 'Self transfer'
+      : (t.isExpense ? 'Expense' : 'Income');
+
   /// Header + one row per transaction (newest first). Pure, so it is unit-tested.
   static List<List<String>> csvRows(
     ReportSummary r,
@@ -43,7 +49,7 @@ class ExportService {
       for (final t in r.transactions)
         [
           _dateFmt.format(t.dateTime),
-          t.isExpense ? 'Expense' : 'Income',
+          typeLabel(t),
           categoryName(t.categoryId),
           plainRupees(t.amountPaise),
           t.paymentMode,
@@ -164,7 +170,7 @@ class ExportService {
         for (final t in r.transactions)
           [
             _dateFmt.format(t.dateTime),
-            t.isExpense ? 'Expense' : 'Income',
+            typeLabel(t),
             pdfSafe(categoryName(t.categoryId)),
             pdfSafe(
               t.merchant?.isNotEmpty == true ? t.merchant! : (t.note ?? ''),
