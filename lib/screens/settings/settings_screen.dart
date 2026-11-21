@@ -7,6 +7,7 @@ import '../../providers/settings_provider.dart';
 import '../../utils/constants.dart';
 import '../budgets/budgets_screen.dart';
 import '../categories/categories_screen.dart';
+import '../recurring/recurring_list_screen.dart';
 import 'change_pin_screen.dart';
 import 'data_section.dart';
 import 'developer_section.dart';
@@ -185,6 +186,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.savings_outlined),
             title: const Text('Budgets'),
             onTap: () => BudgetsScreen.open(context, DateTime.now()),
+          ),
+          ListTile(
+            leading: const Icon(Icons.event_repeat),
+            title: const Text('Repeat payments'),
+            subtitle: const Text('Bills, EMI, chitti and class fees'),
+            onTap: () => RecurringListScreen.open(context),
           ),
           ListTile(
             leading: const Icon(Icons.category_outlined),

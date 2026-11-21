@@ -73,8 +73,8 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
     messenger.showSnackBar(SnackBar(
       content: Text(ok
           ? 'Deleted "${widget.existing!.name}"'
-          : 'Can\'t delete: some transactions use this category. '
-              'Change them first.'),
+          : 'Can\'t delete: some transactions or repeat payments use '
+              'this category. Change them first.'),
     ));
   }
 

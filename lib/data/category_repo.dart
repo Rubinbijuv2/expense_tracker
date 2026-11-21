@@ -70,12 +70,16 @@ class CategoryRepo {
     return rows.isEmpty ? null : CategoryModel.fromMap(rows.first);
   }
 
-  /// True if any transaction uses this category.
+  /// True if any transaction or repeat payment uses this category
+  /// (both block the delete with ON DELETE RESTRICT).
   Future<bool> isUsed(int id) async {
     final db = await _helper.database;
     final rows = await db.rawQuery(
-      'SELECT 1 FROM ${DbHelper.tTransactions} WHERE category_id = ? LIMIT 1',
-      [id],
+      'SELECT 1 FROM ${DbHelper.tTransactions} WHERE category_id = ? '
+      'UNION ALL '
+      'SELECT 1 FROM ${DbHelper.tRecurringPayments} WHERE category_id = ? '
+      'LIMIT 1',
+      [id, id],
     );
     return rows.isNotEmpty;
   }

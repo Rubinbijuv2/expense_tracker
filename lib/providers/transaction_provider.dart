@@ -66,10 +66,12 @@ class TransactionProvider extends ChangeNotifier {
 
   /// Every save (manual or from a detected SMS) goes through [add] or
   /// [update], so this is the one place where budgets are checked.
-  Future<void> add(TransactionModel txn) async {
-    await _txnRepo.insert(txn);
+  /// Returns the new row's id (repeat payments link their installment to it).
+  Future<int> add(TransactionModel txn) async {
+    final id = await _txnRepo.insert(txn);
     await load();
     await _budgetAlerts.checkAfterSave(txn);
+    return id;
   }
 
   Future<void> update(TransactionModel txn) async {

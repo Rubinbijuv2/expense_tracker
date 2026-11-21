@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../providers/dashboard_provider.dart';
 import '../../providers/detected_sms_provider.dart';
+import '../../providers/recurring_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../widgets/placeholder_body.dart';
 import '../../widgets/transaction_tile.dart';
@@ -14,6 +15,7 @@ import 'category_pie_chart.dart';
 import 'detected_sms_strip.dart';
 import 'month_switcher.dart';
 import 'summary_cards.dart';
+import 'upcoming_card.dart';
 
 /// Dashboard: month switcher, totals, detected SMS strip,
 /// pie chart of spending and the last 5 transactions of the month.
@@ -64,12 +66,14 @@ class HomeScreen extends StatelessWidget {
 
     final s = dash.summary;
     final detected = context.read<DetectedSmsProvider>();
+    final recurring = context.read<RecurringProvider>();
     // RefreshIndicator: pull the list down to reload from the database.
     return RefreshIndicator(
       onRefresh: () async {
         await txns.load();
         await dash.loadBudget();
         await detected.load();
+        await recurring.load();
       },
       child: ListView(
         padding: const EdgeInsets.only(bottom: 88), // room for the + button
@@ -91,6 +95,7 @@ class HomeScreen extends StatelessWidget {
             onTap: () => _openBudgets(context, dash),
           ),
           const DetectedSmsStrip(),
+          const UpcomingCard(),
           CategoryPieChart(totals: s.byCategory),
           const _SectionTitle(title: 'Recent transactions'),
           if (s.recent.isEmpty)
