@@ -25,7 +25,8 @@ class ParsedSms {
   });
 
   @override
-  String toString() => 'ParsedSms($amountPaise paise, $type, $merchant, '
+  String toString() =>
+      'ParsedSms($amountPaise paise, $type, $merchant, '
       'mode $paymentMode, a/c $accountLast4)';
 }
 
@@ -42,8 +43,9 @@ class SmsParser {
   SmsParser._(); // Only static methods; not meant to be instantiated.
 
   // ---- Rule 1: sender filter -------------------------------------------
-  static final RegExp _bankSender =
-      RegExp(r'^[A-Z]{2}-[A-Z0-9]{3,8}(?:-[A-Z])?$');
+  static final RegExp _bankSender = RegExp(
+    r'^[A-Z]{2}-[A-Z0-9]{3,8}(?:-[A-Z])?$',
+  );
 
   // ---- Rules 2 & 5: transaction words (the first one decides the type) --
   static final RegExp _txnWord = RegExp(
@@ -54,8 +56,10 @@ class SmsParser {
   // ---- Rule 3: words that mean "not a real transaction" -----------------
   // Same words as PLAN.md rule 3, grouped so we can say *why* an SMS was dropped.
   static final Map<RegExp, String> _dropWords = {
-    RegExp(r'\botp\b|one time password|verification code',
-        caseSensitive: false): 'OTP message',
+    RegExp(
+      r'\botp\b|one time password|verification code',
+      caseSensitive: false,
+    ): 'OTP message',
     RegExp(r'\boffer|cashback on|apply now', caseSensitive: false):
         'promotional message',
     RegExp(r'due on|statement', caseSensitive: false):
@@ -77,14 +81,18 @@ class SmsParser {
   );
 
   // ---- Rule 6: merchant --------------------------------------------------
-  static final RegExp _nameThenCredited =
-      RegExp(r';\s*([^;.]+?)\s+credited', caseSensitive: false);
+  static final RegExp _nameThenCredited = RegExp(
+    r';\s*([^;.]+?)\s+credited',
+    caseSensitive: false,
+  );
   static final RegExp _expenseLead = RegExp(
     r'\b(?:trf\s+to|towards|to|at|VPA)\s+(?:VPA\s+)?(.+)',
     caseSensitive: false,
   );
-  static final RegExp _incomeLead =
-      RegExp(r'\bfrom\s+(.+)', caseSensitive: false);
+  static final RegExp _incomeLead = RegExp(
+    r'\bfrom\s+(.+)',
+    caseSensitive: false,
+  );
   static final RegExp _merchantStop = RegExp(
     r'\s+(?:on|from|refno|ref|upi|avl|via)\b|\.(?=\s|$)|[(;,:]',
     caseSensitive: false,
@@ -97,13 +105,19 @@ class SmsParser {
   );
 
   // ---- Rule 8: payment mode ---------------------------------------------
-  static final RegExp _cashWord =
-      RegExp(r'\b(?:ATM|withdrawn)\b', caseSensitive: false);
-  static final RegExp _upiWord =
-      RegExp(r'\b(?:UPI|VPA)\b', caseSensitive: false);
+  static final RegExp _cashWord = RegExp(
+    r'\b(?:ATM|withdrawn)\b',
+    caseSensitive: false,
+  );
+  static final RegExp _upiWord = RegExp(
+    r'\b(?:UPI|VPA)\b',
+    caseSensitive: false,
+  );
   static final RegExp _cardWord = RegExp(r'\bcard\b', caseSensitive: false);
-  static final RegExp _netBankingWord =
-      RegExp(r'\b(?:NEFT|IMPS|RTGS)\b', caseSensitive: false);
+  static final RegExp _netBankingWord = RegExp(
+    r'\b(?:NEFT|IMPS|RTGS)\b',
+    caseSensitive: false,
+  );
 
   static final RegExp _spaces = RegExp(r'\s+');
 
@@ -139,18 +153,21 @@ class SmsParser {
     }
 
     final word = firstWord.group(1)!.toLowerCase(); // Rule 5
-    final type =
-        (word == 'credited' || word == 'received') ? 'income' : 'expense';
+    final type = (word == 'credited' || word == 'received')
+        ? 'income'
+        : 'expense';
 
-    return ParseResult.parsed(ParsedSms(
-      sender: from,
-      body: body.trim(),
-      amountPaise: amountPaise,
-      type: type,
-      merchant: _findMerchant(text, type), // Rule 6
-      accountLast4: _account.firstMatch(text)?.group(1), // Rule 7
-      paymentMode: _findPaymentMode(text), // Rule 8
-    ));
+    return ParseResult.parsed(
+      ParsedSms(
+        sender: from,
+        body: body.trim(),
+        amountPaise: amountPaise,
+        type: type,
+        merchant: _findMerchant(text, type), // Rule 6
+        accountLast4: _account.firstMatch(text)?.group(1), // Rule 7
+        paymentMode: _findPaymentMode(text), // Rule 8
+      ),
+    );
   }
 
   static int? _findAmountPaise(String text) {
@@ -163,15 +180,17 @@ class SmsParser {
     final parts = raw.replaceAll(',', '').split('.');
     final rupees = int.tryParse(parts[0]);
     if (rupees == null) return null;
-    final paise =
-        parts.length > 1 ? int.tryParse(parts[1].padRight(2, '0')) ?? 0 : 0;
+    final paise = parts.length > 1
+        ? int.tryParse(parts[1].padRight(2, '0')) ?? 0
+        : 0;
     return rupees * 100 + paise;
   }
 
   static String _findMerchant(String text, String type) {
     String? raw;
     if (type == 'expense') {
-      raw = _nameThenCredited.firstMatch(text)?.group(1) ??
+      raw =
+          _nameThenCredited.firstMatch(text)?.group(1) ??
           _expenseLead.firstMatch(text)?.group(1);
     } else {
       raw = _incomeLead.firstMatch(text)?.group(1);
@@ -194,9 +213,11 @@ class SmsParser {
   static String _titleCase(String input) => input
       .split(_spaces)
       .where((w) => w.isNotEmpty)
-      .map((w) => _keepUpper.contains(w.toUpperCase())
-          ? w.toUpperCase()
-          : w[0].toUpperCase() + w.substring(1).toLowerCase())
+      .map(
+        (w) => _keepUpper.contains(w.toUpperCase())
+            ? w.toUpperCase()
+            : w[0].toUpperCase() + w.substring(1).toLowerCase(),
+      )
       .join(' ');
 
   static String? _findPaymentMode(String text) {

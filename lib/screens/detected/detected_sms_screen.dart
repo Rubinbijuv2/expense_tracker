@@ -13,8 +13,9 @@ import 'detected_sms_card.dart';
 class DetectedSmsScreen extends StatelessWidget {
   const DetectedSmsScreen({super.key});
 
-  static Future<void> open(BuildContext context) => Navigator.of(context)
-      .push(MaterialPageRoute(builder: (_) => const DetectedSmsScreen()));
+  static Future<void> open(BuildContext context) =>
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const DetectedSmsScreen()));
 
   @override
   Widget build(BuildContext context) {
@@ -32,51 +33,65 @@ class DetectedSmsScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: detected.load,
-        child: pending.isEmpty
-            ? ListView(
-                // A ListView (not just a Column) so pull-to-refresh works.
-                children: const [
-                  SizedBox(height: 120),
-                  PlaceholderBody(
-                    icon: Icons.mark_email_read_outlined,
-                    title: 'All caught up',
-                    message: 'New bank SMS will appear here as suggestions.',
-                  ),
-                ],
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: pending.length,
-                itemBuilder: (context, i) {
-                  final sms = pending[i];
-                  final cat = sms.guessedCategoryId == null
-                      ? null
-                      : txns.categoryById(sms.guessedCategoryId!);
-                  return DetectedSmsCard(
-                    key: ValueKey(sms.id),
-                    sms: sms,
-                    category: cat,
-                    onSave: () => _save(context, sms),
-                    onEdit: () => AddEditScreen.openFromSms(context, sms),
-                    onIgnore: () => _ignore(context, sms),
-                  );
-                },
-              ),
-      ),
+      body: detected.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: detected.load,
+              child: pending.isEmpty
+                  ? ListView(
+                      // A ListView (not just a Column) so pull-to-refresh works.
+                      children: const [
+                        SizedBox(height: 120),
+                        PlaceholderBody(
+                          icon: Icons.mark_email_read_outlined,
+                          title: 'All caught up',
+                          message:
+                              'New bank SMS will appear here as suggestions.',
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: pending.length,
+                      itemBuilder: (context, i) {
+                        final sms = pending[i];
+                        final cat = sms.guessedCategoryId == null
+                            ? null
+                            : txns.categoryById(sms.guessedCategoryId!);
+                        return DetectedSmsCard(
+                          key: ValueKey(sms.id),
+                          sms: sms,
+                          category: cat,
+                          onSave: () => _save(context, sms),
+                          onEdit: () => AddEditScreen.openFromSms(context, sms),
+                          onIgnore: () => _ignore(context, sms),
+                        );
+                      },
+                    ),
+            ),
     );
   }
 
   Future<void> _save(BuildContext context, DetectedSms sms) async {
+    // The guessed category was deleted: let the user pick one.
+    if (sms.guessedCategoryId == null ||
+        context.read<TransactionProvider>().categoryById(
+              sms.guessedCategoryId!,
+            ) ==
+            null) {
+      await AddEditScreen.openFromSms(context, sms);
+      return;
+    }
     final messenger = ScaffoldMessenger.of(context);
     try {
       await context.read<DetectedSmsProvider>().save(sms);
-      messenger.showSnackBar(SnackBar(
-          content: Text('Saved ${formatPaise(sms.amountPaise)}')));
+      messenger.showSnackBar(
+        SnackBar(content: Text('Saved ${formatPaise(sms.amountPaise)}')),
+      );
     } catch (e) {
       messenger.showSnackBar(
-          const SnackBar(content: Text('Could not save. Please try again.')));
+        const SnackBar(content: Text('Could not save. Please try again.')),
+      );
     }
   }
 
@@ -85,15 +100,17 @@ class DetectedSmsScreen extends StatelessWidget {
     final messenger = ScaffoldMessenger.of(context);
     await provider.ignore(sms);
     messenger.clearSnackBars();
-    messenger.showSnackBar(SnackBar(
-      content: const Text('Ignored'),
-      persist: false,
-      duration: const Duration(seconds: 4),
-      action: SnackBarAction(
-        label: 'Undo',
-        onPressed: () => provider.restorePending(sms),
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text('Ignored'),
+        persist: false,
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => provider.restorePending(sms),
+        ),
       ),
-    ));
+    );
   }
 
   Future<void> _ignoreAll(BuildContext context) async {
@@ -102,15 +119,19 @@ class DetectedSmsScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Ignore all detected SMS?'),
-        content: Text('${provider.pending.length} suggestions will be removed '
-            'from this list. Your transactions are not changed.'),
+        content: Text(
+          '${provider.pending.length} suggestions will be removed '
+          'from this list. Your transactions are not changed.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Ignore all')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Ignore all'),
+          ),
         ],
       ),
     );

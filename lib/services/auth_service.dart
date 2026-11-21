@@ -34,7 +34,7 @@ class _FlutterSecureStore implements SecureStore {
 /// and compare. The salt means two phones with PIN 1234 get different hashes.
 class AuthService {
   AuthService({SecureStore? store, this._localAuth})
-      : _store = store ?? const _FlutterSecureStore();
+    : _store = store ?? const _FlutterSecureStore();
 
   final SecureStore _store;
   final LocalAuthentication? _localAuth;

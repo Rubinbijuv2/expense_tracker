@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../data/budget_repo.dart';
 import '../models/budget.dart';
 import '../models/category_model.dart';
+import '../services/budget_carry_over.dart';
 import '../utils/formatters.dart';
 import 'transaction_provider.dart';
 
@@ -91,6 +92,9 @@ class BudgetProvider extends ChangeNotifier {
   Future<void> load() async {
     final requested = _month;
     try {
+      if (requested == _monthOf(DateTime.now())) {
+        await BudgetCarryOver.ensureCurrentMonth(repo: _repo);
+      }
       final key = monthKey(requested);
       final list = await _repo.getForMonth(key);
       final source = await _repo.latestMonthBefore(key);

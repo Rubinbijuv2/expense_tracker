@@ -34,7 +34,10 @@ class ExportService {
       '${paise ~/ 100}.${(paise % 100).toString().padLeft(2, '0')}';
 
   /// Header + one row per transaction (newest first). Pure, so it is unit-tested.
-  static List<List<String>> csvRows(ReportSummary r, CategoryNamer categoryName) {
+  static List<List<String>> csvRows(
+    ReportSummary r,
+    CategoryNamer categoryName,
+  ) {
     return [
       csvHeader,
       for (final t in r.transactions)
@@ -56,7 +59,8 @@ class ExportService {
       Csv(addBom: true).encode(csvRows(r, categoryName));
 
   /// The PDF's built-in font has no ₹ glyph, so the PDF uses "Rs." instead.
-  static String pdfMoney(int paise) => formatPaise(paise).replaceFirst('₹', 'Rs. ');
+  static String pdfMoney(int paise) =>
+      formatPaise(paise).replaceFirst('₹', 'Rs. ');
 
   /// The built-in PDF font only knows Latin letters; anything else becomes '?'
   /// instead of an empty box.
@@ -65,7 +69,9 @@ class ExportService {
 
   /// A one-or-more page A4 PDF: title, totals, then a table of transactions.
   static Future<Uint8List> buildPdf(
-      ReportSummary r, CategoryNamer categoryName) async {
+    ReportSummary r,
+    CategoryNamer categoryName,
+  ) async {
     final doc = pw.Document(title: 'Expense Report ${monthKey(r.month)}');
     final title = 'Expense Report - ${_monthTitle.format(r.month)}';
 
@@ -76,20 +82,28 @@ class ExportService {
         margin: const pw.EdgeInsets.all(32),
         footer: (context) => pw.Align(
           alignment: pw.Alignment.centerRight,
-          child: pw.Text('Page ${context.pageNumber} of ${context.pagesCount}',
-              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+          child: pw.Text(
+            'Page ${context.pageNumber} of ${context.pagesCount}',
+            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+          ),
         ),
         build: (context) => [
-          pw.Text(title,
-              style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+          pw.Text(
+            title,
+            style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+          ),
           pw.SizedBox(height: 4),
-          pw.Text('Generated on ${_dateFmt.format(DateTime.now())}',
-              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+          pw.Text(
+            'Generated on ${_dateFmt.format(DateTime.now())}',
+            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+          ),
           pw.SizedBox(height: 16),
           _pdfTotals(r),
           pw.SizedBox(height: 20),
-          pw.Text('Transactions (${r.transactions.length})',
-              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+          pw.Text(
+            'Transactions (${r.transactions.length})',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
           pw.SizedBox(height: 8),
           if (r.transactions.isEmpty)
             pw.Text('No transactions this month.')
@@ -103,43 +117,58 @@ class ExportService {
 
   static pw.Widget _pdfTotals(ReportSummary r) {
     pw.Widget cell(String label, String value) => pw.Expanded(
-          child: pw.Container(
-            padding: const pw.EdgeInsets.all(8),
-            margin: const pw.EdgeInsets.only(right: 8),
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey400),
-              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+      child: pw.Container(
+        padding: const pw.EdgeInsets.all(8),
+        margin: const pw.EdgeInsets.only(right: 8),
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: PdfColors.grey400),
+          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+        ),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(
+              label,
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
             ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(label,
-                    style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
-                pw.SizedBox(height: 2),
-                pw.Text(value,
-                    style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-              ],
+            pw.SizedBox(height: 2),
+            pw.Text(
+              value,
+              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
             ),
-          ),
-        );
-    return pw.Row(children: [
-      cell('Spent', pdfMoney(r.spentPaise)),
-      cell('Income', pdfMoney(r.incomePaise)),
-      cell('Balance', pdfMoney(r.balancePaise)),
-      cell('Average / day', pdfMoney(r.averagePerDayPaise)),
-    ]);
+          ],
+        ),
+      ),
+    );
+    return pw.Row(
+      children: [
+        cell('Spent', pdfMoney(r.spentPaise)),
+        cell('Income', pdfMoney(r.incomePaise)),
+        cell('Balance', pdfMoney(r.balancePaise)),
+        cell('Average / day', pdfMoney(r.averagePerDayPaise)),
+      ],
+    );
   }
 
   static pw.Widget _pdfTable(ReportSummary r, CategoryNamer categoryName) {
     return pw.TableHelper.fromTextArray(
-      headers: ['Date', 'Type', 'Category', 'Merchant / Note', 'Mode', 'Amount'],
+      headers: [
+        'Date',
+        'Type',
+        'Category',
+        'Merchant / Note',
+        'Mode',
+        'Amount',
+      ],
       data: [
         for (final t in r.transactions)
           [
             _dateFmt.format(t.dateTime),
             t.isExpense ? 'Expense' : 'Income',
             pdfSafe(categoryName(t.categoryId)),
-            pdfSafe(t.merchant?.isNotEmpty == true ? t.merchant! : (t.note ?? '')),
+            pdfSafe(
+              t.merchant?.isNotEmpty == true ? t.merchant! : (t.note ?? ''),
+            ),
             t.paymentMode,
             pdfMoney(t.amountPaise),
           ],
@@ -170,10 +199,12 @@ class ExportService {
   }
 
   Future<void> _share(File file, String mimeType, DateTime month) async {
-    await SharePlus.instance.share(ShareParams(
-      files: [XFile(file.path, mimeType: mimeType)],
-      subject: 'Expense report ${_monthTitle.format(month)}',
-    ));
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path, mimeType: mimeType)],
+        subject: 'Expense report ${_monthTitle.format(month)}',
+      ),
+    );
   }
 
   /// Builds the CSV, saves it and opens the share sheet. Returns the saved file.

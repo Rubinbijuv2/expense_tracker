@@ -10,7 +10,9 @@ class ChangePinScreen extends StatefulWidget {
 
   /// Returns true if the PIN was changed.
   static Future<bool?> open(BuildContext context) => Navigator.push<bool>(
-      context, MaterialPageRoute(builder: (_) => const ChangePinScreen()));
+    context,
+    MaterialPageRoute(builder: (_) => const ChangePinScreen()),
+  );
 
   @override
   State<ChangePinScreen> createState() => _ChangePinScreenState();

@@ -25,8 +25,9 @@ class BackupService {
   final DbHelper _helper;
 
   /// Every real SQLite file starts with these 16 bytes.
-  static final Uint8List _sqliteHeader =
-      Uint8List.fromList('SQLite format 3\u0000'.codeUnits);
+  static final Uint8List _sqliteHeader = Uint8List.fromList(
+    'SQLite format 3\u0000'.codeUnits,
+  );
 
   static const List<String> _requiredTables = [
     DbHelper.tCategories,
@@ -47,11 +48,13 @@ class BackupService {
     final out = File(p.join(dir.path, 'expense_tracker_backup_$stamp.db'));
     await File(source).copy(out.path);
 
-    await SharePlus.instance.share(ShareParams(
-      files: [XFile(out.path, mimeType: 'application/octet-stream')],
-      subject: 'Expense Tracker backup',
-      text: 'Expense Tracker backup ($stamp). Keep this file safe.',
-    ));
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(out.path, mimeType: 'application/octet-stream')],
+        subject: 'Expense Tracker backup',
+        text: 'Expense Tracker backup ($stamp). Keep this file safe.',
+      ),
+    );
   }
 
   /// Replaces the current database with [bytes] (the picked backup file).
@@ -94,17 +97,20 @@ class BackupService {
     try {
       db = await openDatabase(path, readOnly: true, singleInstance: false);
       final rows = await db.rawQuery(
-          "SELECT name FROM sqlite_master WHERE type = 'table'");
+        "SELECT name FROM sqlite_master WHERE type = 'table'",
+      );
       final names = rows.map((r) => r['name'] as String).toSet();
       final missing = _requiredTables.where((t) => !names.contains(t));
       if (missing.isNotEmpty) {
         throw InvalidBackupException(
-            'This database is not an Expense Tracker backup.');
+          'This database is not an Expense Tracker backup.',
+        );
       }
       final version = await db.getVersion();
       if (version > DbHelper.dbVersion) {
         throw InvalidBackupException(
-            'This backup is from a newer version of the app.');
+          'This backup is from a newer version of the app.',
+        );
       }
     } on InvalidBackupException {
       rethrow;

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App icon foreground: a white rupee sign inside a soft circle.
+     Canvas is 108x108; Android only guarantees the middle 66x66 is visible,
+     so everything stays inside it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Soft ring behind the symbol -->
+    <path
+        android:fillColor="#33FFFFFF"
+        android:pathData="M54,24a30,30 0,1 1,0 60a30,30 0,1 1,0 -60z"/>
+    <!-- Rupee sign: top bar, middle bar, bowl and diagonal leg -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M42,38 H67 M42,47 H67 M42,38 H50 A9,9 0,0 1,50 56 H43 L61,74"/>
+</vector>

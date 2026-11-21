@@ -9,7 +9,7 @@ import '../budgets/budgets_screen.dart';
 import '../categories/categories_screen.dart';
 import 'change_pin_screen.dart';
 import 'data_section.dart';
-import 'test_sms_screen.dart';
+import 'developer_section.dart';
 
 /// Profile, theme, PIN/fingerprint, categories, budgets, backup and reset.
 class SettingsScreen extends StatefulWidget {
@@ -22,30 +22,49 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   static const int _tapsNeeded = 5;
   int _versionTaps = 0;
+  bool _devUnlocked = false;
   Future<bool>? _biometricsAvailable;
 
   @override
   void initState() {
     super.initState();
-    _biometricsAvailable =
-        context.read<AppLockProvider>().auth.canUseBiometrics();
+    _biometricsAvailable = context
+        .read<AppLockProvider>()
+        .auth
+        .canUseBiometrics();
   }
 
-  /// Tapping the version 5 times opens the developer screen
-  /// (a common Android trick to hide developer options).
+  /// Tapping the version 5 times shows the Developer section (Load demo
+  /// data, Test SMS) — a common Android trick to hide developer options.
   void _onVersionTap() {
-    _versionTaps++;
     final messenger = ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
+    if (_devUnlocked) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Developer options are shown above'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+      return;
+    }
+    _versionTaps++;
     if (_versionTaps >= _tapsNeeded) {
-      _versionTaps = 0;
-      TestSmsScreen.open(context);
+      setState(() => _devUnlocked = true);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Developer options unlocked')),
+      );
     } else if (_versionTaps >= 2) {
       final left = _tapsNeeded - _versionTaps;
-      messenger.showSnackBar(SnackBar(
-        content: Text('$left more tap${left == 1 ? '' : 's'} to open Test SMS'),
-        duration: const Duration(milliseconds: 800),
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            '$left more tap${left == 1 ? '' : 's'} to unlock '
+            'developer options',
+          ),
+          duration: const Duration(milliseconds: 800),
+        ),
+      );
     }
   }
 
@@ -64,11 +83,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, controller.text),
-              child: const Text('Save')),
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -83,7 +104,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       messenger.showSnackBar(const SnackBar(content: Text('PIN changed')));
     } else if (changed == false) {
       messenger.showSnackBar(
-          const SnackBar(content: Text('Too many wrong tries. PIN not changed.')));
+        const SnackBar(content: Text('Too many wrong tries. PIN not changed.')),
+      );
     }
   }
 
@@ -115,17 +137,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: SegmentedButton<ThemeMode>(
               segments: const [
                 ButtonSegment(
-                    value: ThemeMode.light,
-                    icon: Icon(Icons.light_mode_outlined),
-                    label: Text('Light')),
+                  value: ThemeMode.light,
+                  icon: Icon(Icons.light_mode_outlined),
+                  label: Text('Light'),
+                ),
                 ButtonSegment(
-                    value: ThemeMode.dark,
-                    icon: Icon(Icons.dark_mode_outlined),
-                    label: Text('Dark')),
+                  value: ThemeMode.dark,
+                  icon: Icon(Icons.dark_mode_outlined),
+                  label: Text('Dark'),
+                ),
                 ButtonSegment(
-                    value: ThemeMode.system,
-                    icon: Icon(Icons.phone_android),
-                    label: Text('System')),
+                  value: ThemeMode.system,
+                  icon: Icon(Icons.phone_android),
+                  label: Text('System'),
+                ),
               ],
               selected: {settings.themeMode},
               onSelectionChanged: (s) => settings.setThemeMode(s.first),
@@ -148,8 +173,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ? null
                     : const Text('No fingerprint set up on this phone'),
                 value: lock.fingerprintEnabled && available,
-                onChanged:
-                    available ? (on) => _toggleFingerprint(lock, on) : null,
+                onChanged: available
+                    ? (on) => _toggleFingerprint(lock, on)
+                    : null,
               );
             },
           ),
@@ -166,16 +192,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const _Header('Data'),
           const DataSection(),
+          // kDebugMode is true only in `flutter run` builds, so while
+          // developing the section is always there; in the release APK it
+          // appears only after tapping Version 5 times.
+          if (kDebugMode || _devUnlocked) ...[
+            const _Header('Developer'),
+            const DeveloperSection(),
+          ],
           const _Header('About'),
-          // kDebugMode is true only in `flutter run` builds, never in the
-          // release APK, so this row is hidden from normal users.
-          if (kDebugMode)
-            ListTile(
-              leading: const Icon(Icons.developer_mode),
-              title: const Text('Test SMS (developer)'),
-              subtitle: const Text('Shown in debug builds only'),
-              onTap: () => TestSmsScreen.open(context),
-            ),
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('Version'),
@@ -199,9 +223,7 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
       child: Text(
         text,
-        style: Theme.of(context)
-            .textTheme
-            .labelLarge
+        style: Theme.of(context).textTheme.labelLarge
             ?.copyWith(color: Theme.of(context).colorScheme.primary),
       ),
     );

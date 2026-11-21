@@ -19,8 +19,9 @@ class CategoryGuess {
   bool get isFromRule => categoryId != null;
 
   @override
-  String toString() =>
-      isFromRule ? 'CategoryGuess(id $categoryId)' : 'CategoryGuess($categoryName)';
+  String toString() => isFromRule
+      ? 'CategoryGuess(id $categoryId)'
+      : 'CategoryGuess($categoryName)';
 }
 
 class CategoryGuesser {
@@ -30,16 +31,31 @@ class CategoryGuesser {
 
   /// Keyword → default category name (names match data/default_categories.dart).
   static const Map<String, String> keywordMap = {
-    'swiggy': 'Food', 'zomato': 'Food', 'dominos': 'Food',
-    'uber': 'Travel', 'ola': 'Travel', 'rapido': 'Travel',
-    'irctc': 'Travel', 'redbus': 'Travel',
-    'amazon': 'Shopping', 'flipkart': 'Shopping',
-    'myntra': 'Shopping', 'meesho': 'Shopping',
-    'jio': 'Bills', 'airtel': 'Bills', 'vi': 'Bills', 'bescom': 'Bills',
-    'electricity': 'Bills', 'recharge': 'Bills',
-    'netflix': 'Entertainment', 'hotstar': 'Entertainment',
-    'spotify': 'Entertainment', 'bookmyshow': 'Entertainment',
-    'apollo': 'Health', 'pharmeasy': 'Health', '1mg': 'Health',
+    'swiggy': 'Food',
+    'zomato': 'Food',
+    'dominos': 'Food',
+    'uber': 'Travel',
+    'ola': 'Travel',
+    'rapido': 'Travel',
+    'irctc': 'Travel',
+    'redbus': 'Travel',
+    'amazon': 'Shopping',
+    'flipkart': 'Shopping',
+    'myntra': 'Shopping',
+    'meesho': 'Shopping',
+    'jio': 'Bills',
+    'airtel': 'Bills',
+    'vi': 'Bills',
+    'bescom': 'Bills',
+    'electricity': 'Bills',
+    'recharge': 'Bills',
+    'netflix': 'Entertainment',
+    'hotstar': 'Entertainment',
+    'spotify': 'Entertainment',
+    'bookmyshow': 'Entertainment',
+    'apollo': 'Health',
+    'pharmeasy': 'Health',
+    '1mg': 'Health',
   };
 
   /// 1. Learned [rules] first (the longest matching keyword wins).

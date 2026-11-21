@@ -8,13 +8,16 @@ import 'package:expense_tracker/screens/lock/lock_screen.dart';
 import 'package:expense_tracker/screens/onboarding/onboarding_screen.dart';
 
 void main() {
-  testWidgets('Bottom navigation shows 4 tabs and switches screens',
-      (WidgetTester tester) async {
+  testWidgets('Bottom navigation shows 4 tabs and switches screens', (
+    WidgetTester tester,
+  ) async {
     // Onboarding finished and no PIN → straight to the main app.
-    await tester.pumpWidget(ExpenseTrackerApp(
-      settings: SettingsProvider(onboardingDone: true),
-      lock: AppLockProvider(pinSet: false, fingerprintEnabled: false),
-    ));
+    await tester.pumpWidget(
+      ExpenseTrackerApp(
+        settings: SettingsProvider(onboardingDone: true),
+        lock: AppLockProvider(pinSet: false, fingerprintEnabled: false),
+      ),
+    );
 
     // All four tabs are in the navigation bar.
     final nav = find.byType(NavigationBar);
@@ -37,20 +40,24 @@ void main() {
   });
 
   testWidgets('First launch shows onboarding', (WidgetTester tester) async {
-    await tester.pumpWidget(ExpenseTrackerApp(
-      settings: SettingsProvider(),
-      lock: AppLockProvider(pinSet: false, fingerprintEnabled: false),
-    ));
+    await tester.pumpWidget(
+      ExpenseTrackerApp(
+        settings: SettingsProvider(),
+        lock: AppLockProvider(pinSet: false, fingerprintEnabled: false),
+      ),
+    );
     expect(find.byType(OnboardingScreen), findsOneWidget);
     expect(find.text('Track every rupee'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
   });
 
   testWidgets('With a PIN, the app starts locked', (WidgetTester tester) async {
-    await tester.pumpWidget(ExpenseTrackerApp(
-      settings: SettingsProvider(onboardingDone: true, name: 'Asha'),
-      lock: AppLockProvider(pinSet: true, fingerprintEnabled: false),
-    ));
+    await tester.pumpWidget(
+      ExpenseTrackerApp(
+        settings: SettingsProvider(onboardingDone: true, name: 'Asha'),
+        lock: AppLockProvider(pinSet: true, fingerprintEnabled: false),
+      ),
+    );
     expect(find.byType(LockScreen), findsOneWidget);
     expect(find.text('Welcome back, Asha'), findsOneWidget);
   });

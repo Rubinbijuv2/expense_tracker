@@ -77,18 +77,25 @@ void main() {
     });
 
     test('reads account last digits', () {
-      final r = SmsParser.parse('AX-HDFCBK',
-          'Rs.450.00 debited from A/c XX1234 on 20-11-26 to VPA swiggy@axisbank');
+      final r = SmsParser.parse(
+        'AX-HDFCBK',
+        'Rs.450.00 debited from A/c XX1234 on 20-11-26 to VPA swiggy@axisbank',
+      );
       expect(r!.accountLast4, '1234');
     });
 
     test('accepts -S / -T sender suffix', () {
-      expect(SmsParser.parse('AX-HDFCBK-S', 'Rs 10 debited to VPA a@b'), isNotNull);
+      expect(
+        SmsParser.parse('AX-HDFCBK-S', 'Rs 10 debited to VPA a@b'),
+        isNotNull,
+      );
     });
 
     test('UPI ID with dots becomes words', () {
-      final r = SmsParser.parse('VM-ICICIB',
-          'Rs.50 received from rahul.kumar@okaxis on 01-11-26');
+      final r = SmsParser.parse(
+        'VM-ICICIB',
+        'Rs.50 received from rahul.kumar@okaxis on 01-11-26',
+      );
       expect(r!.merchant, 'Rahul Kumar');
     });
   });
@@ -99,13 +106,22 @@ void main() {
       expect(CategoryGuesser.guess('Uber India', []).categoryName, 'Travel');
       expect(CategoryGuesser.guess('Amazon Pay', []).categoryName, 'Shopping');
       expect(CategoryGuesser.guess('Jio Prepaid', []).categoryName, 'Bills');
-      expect(CategoryGuesser.guess('Netflix', []).categoryName, 'Entertainment');
-      expect(CategoryGuesser.guess('Apollo Pharmacy', []).categoryName, 'Health');
+      expect(
+        CategoryGuesser.guess('Netflix', []).categoryName,
+        'Entertainment',
+      );
+      expect(
+        CategoryGuesser.guess('Apollo Pharmacy', []).categoryName,
+        'Health',
+      );
     });
 
     test('short keywords need a whole word', () {
       expect(CategoryGuesser.guess('Ravi', []).categoryName, 'Others');
-      expect(CategoryGuesser.guess('Motorola Store', []).categoryName, 'Others');
+      expect(
+        CategoryGuesser.guess('Motorola Store', []).categoryName,
+        'Others',
+      );
       expect(CategoryGuesser.guess('Vi Postpaid', []).categoryName, 'Bills');
     });
 

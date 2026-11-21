@@ -3,7 +3,8 @@ import 'package:expense_tracker/providers/transaction_provider.dart';
 import 'package:expense_tracker/utils/validators.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-TransactionModel _txn(DateTime when, int paise, String type) => TransactionModel(
+TransactionModel _txn(DateTime when, int paise, String type) =>
+    TransactionModel(
       amountPaise: paise,
       type: type,
       categoryId: 1,
@@ -33,8 +34,11 @@ void main() {
 
     test('rejects badly formed numbers', () {
       for (final bad in ['.', '1.2.3', '12.345', 'abc', '-5']) {
-        expect(validateAmount(bad), startsWith('Enter a valid amount'),
-            reason: bad);
+        expect(
+          validateAmount(bad),
+          startsWith('Enter a valid amount'),
+          reason: bad,
+        );
       }
     });
   });

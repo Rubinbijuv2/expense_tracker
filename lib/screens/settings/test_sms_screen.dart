@@ -16,8 +16,9 @@ import 'sample_sms_data.dart';
 class TestSmsScreen extends StatefulWidget {
   const TestSmsScreen({super.key});
 
-  static Future<void> open(BuildContext context) => Navigator.of(context)
-      .push(MaterialPageRoute(builder: (_) => const TestSmsScreen()));
+  static Future<void> open(BuildContext context) =>
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const TestSmsScreen()));
 
   @override
   State<TestSmsScreen> createState() => _TestSmsScreenState();
@@ -52,7 +53,9 @@ class _TestSmsScreenState extends State<TestSmsScreen> {
     SmsResult result;
     try {
       result = await provider.simulateIncoming(
-          _senderCtrl.text.trim(), _bodyCtrl.text);
+        _senderCtrl.text.trim(),
+        _bodyCtrl.text,
+      );
     } catch (e) {
       result = SmsResult.ignored('error: $e');
     }
@@ -120,8 +123,9 @@ class _TestSmsScreenState extends State<TestSmsScreen> {
             onPressed: _busy ? null : _simulate,
             icon: const Icon(Icons.sms),
             label: const Text('Simulate incoming SMS'),
-            style:
-                FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+            ),
           ),
           const SizedBox(height: 16),
           if (_result != null) _ResultCard(result: _result!),
@@ -154,8 +158,11 @@ class _ResultCard extends StatelessWidget {
 
     final category = saved.guessedCategoryId == null
         ? null
-        : context.read<TransactionProvider>().categoryById(saved.guessedCategoryId!);
-    final text = 'Detected: ${NotificationService.shortAmount(saved.amountPaise)}, '
+        : context.read<TransactionProvider>().categoryById(
+            saved.guessedCategoryId!,
+          );
+    final text =
+        'Detected: ${NotificationService.shortAmount(saved.amountPaise)}, '
         '${saved.merchant ?? 'Unknown'}, ${category?.name ?? 'no category'}';
 
     return Card(
@@ -166,9 +173,11 @@ class _ResultCard extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.check_circle_outline),
             title: Text(text),
-            subtitle: Text('${saved.type} · ${saved.paymentMode ?? 'mode ?'}'
-                '${saved.accountLast4 == null ? '' : ' · A/c ••${saved.accountLast4}'}'
-                ' · saved as pending'),
+            subtitle: Text(
+              '${saved.type} · ${saved.paymentMode ?? 'mode ?'}'
+              '${saved.accountLast4 == null ? '' : ' · A/c ••${saved.accountLast4}'}'
+              ' · saved as pending',
+            ),
           ),
           Align(
             alignment: Alignment.centerRight,

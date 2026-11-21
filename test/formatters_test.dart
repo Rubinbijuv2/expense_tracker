@@ -48,7 +48,18 @@ void main() {
     });
 
     test('returns null for invalid input', () {
-      for (final bad in [null, '', '   ', 'abc', '12.345', '-5', '1.2.3', '.5', '5.', '₹']) {
+      for (final bad in [
+        null,
+        '',
+        '   ',
+        'abc',
+        '12.345',
+        '-5',
+        '1.2.3',
+        '.5',
+        '5.',
+        '₹',
+      ]) {
         expect(parseToPaise(bad), isNull, reason: 'input: $bad');
       }
     });

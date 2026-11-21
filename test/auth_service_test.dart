@@ -73,15 +73,21 @@ void main() {
     final t0 = DateTime(2026, 11, 21, 10, 0, 0);
 
     test('less than 1 minute away → stays unlocked', () {
-      expect(AppLockProvider.shouldRelock(t0, t0.add(const Duration(seconds: 59))),
-          isFalse);
+      expect(
+        AppLockProvider.shouldRelock(t0, t0.add(const Duration(seconds: 59))),
+        isFalse,
+      );
     });
 
     test('1 minute or more away → locks', () {
-      expect(AppLockProvider.shouldRelock(t0, t0.add(const Duration(minutes: 1))),
-          isTrue);
-      expect(AppLockProvider.shouldRelock(t0, t0.add(const Duration(hours: 2))),
-          isTrue);
+      expect(
+        AppLockProvider.shouldRelock(t0, t0.add(const Duration(minutes: 1))),
+        isTrue,
+      );
+      expect(
+        AppLockProvider.shouldRelock(t0, t0.add(const Duration(hours: 2))),
+        isTrue,
+      );
     });
   });
 }

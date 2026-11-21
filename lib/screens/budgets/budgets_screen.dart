@@ -26,7 +26,16 @@ class BudgetsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final bp = context.watch<BudgetProvider>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Budgets')),
+      appBar: AppBar(
+        title: const Text('Budgets'),
+        // A thin progress line under the app bar while the month loads.
+        bottom: bp.isLoading
+            ? const PreferredSize(
+                preferredSize: Size.fromHeight(4),
+                child: LinearProgressIndicator(),
+              )
+            : null,
+      ),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
@@ -136,7 +145,7 @@ class _BudgetCard extends StatelessWidget {
 
     return Card(
       color: big ? theme.colorScheme.surfaceContainerHigh : null,
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       // InkWell gives the ripple effect when the card is tapped.
       child: InkWell(
         borderRadius: BorderRadius.circular(12),

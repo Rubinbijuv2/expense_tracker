@@ -17,16 +17,15 @@ void main() {
     });
 
     test('search matches note OR merchant with one ? each', () {
-      final (where, args) =
-          const TransactionFilter(query: ' swiggy ').toWhere();
-      expect(where,
-          r"(note LIKE ? ESCAPE '\' OR merchant LIKE ? ESCAPE '\')");
+      final (where, args) = const TransactionFilter(query: ' swiggy ')
+          .toWhere();
+      expect(where, r"(note LIKE ? ESCAPE '\' OR merchant LIKE ? ESCAPE '\')");
       expect(args, ['%swiggy%', '%swiggy%']);
     });
 
     test('% and _ in search text are escaped, never put into SQL', () {
-      final (where, args) =
-          const TransactionFilter(query: "50%_off' OR 1=1").toWhere();
+      final (where, args) = const TransactionFilter(query: "50%_off' OR 1=1")
+          .toWhere();
       expect(where, isNot(contains('OR 1=1')));
       expect(args.first, r"%50\%\_off' OR 1=1%");
     });
@@ -71,15 +70,13 @@ void main() {
     });
 
     test('only min amount', () {
-      final (where, args) =
-          const TransactionFilter(minPaise: 0).toWhere();
+      final (where, args) = const TransactionFilter(minPaise: 0).toWhere();
       expect(where, 'amount_paise >= ?');
       expect(args, [0]);
     });
 
     test('type filter', () {
-      final (where, args) =
-          const TransactionFilter(type: 'income').toWhere();
+      final (where, args) = const TransactionFilter(type: 'income').toWhere();
       expect(where, 'type = ?');
       expect(args, ['income']);
     });
@@ -151,12 +148,12 @@ void main() {
 
   test('HistoryProvider.totalsOf sums expense and income separately', () {
     TransactionModel t(int paise, String type) => TransactionModel(
-          amountPaise: paise,
-          type: type,
-          categoryId: 1,
-          paymentMode: 'UPI',
-          dateTime: DateTime(2026, 11, 1),
-        );
+      amountPaise: paise,
+      type: type,
+      categoryId: 1,
+      paymentMode: 'UPI',
+      dateTime: DateTime(2026, 11, 1),
+    );
     expect(HistoryProvider.totalsOf([]), (0, 0));
     expect(
       HistoryProvider.totalsOf([

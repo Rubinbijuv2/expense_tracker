@@ -22,7 +22,10 @@ import 'sms_parser.dart';
 @pragma('vm:entry-point')
 Future<void> onBackgroundSms(SmsMessage message) async {
   await SmsService().handleIncoming(
-      message.address, message.body, SmsService.dateOf(message));
+    message.address,
+    message.body,
+    SmsService.dateOf(message),
+  );
 }
 
 /// What happened to one SMS: either the saved pending row, or why it was
@@ -49,10 +52,10 @@ class SmsService {
     TransactionRepo? transactionRepo,
     MerchantRuleRepo? ruleRepo,
     CategoryRepo? categoryRepo,
-  })  : _smsRepo = smsRepo ?? DetectedSmsRepo(),
-        _txnRepo = transactionRepo ?? TransactionRepo(),
-        _ruleRepo = ruleRepo ?? MerchantRuleRepo(),
-        _categoryRepo = categoryRepo ?? CategoryRepo();
+  }) : _smsRepo = smsRepo ?? DetectedSmsRepo(),
+       _txnRepo = transactionRepo ?? TransactionRepo(),
+       _ruleRepo = ruleRepo ?? MerchantRuleRepo(),
+       _categoryRepo = categoryRepo ?? CategoryRepo();
 
   final DetectedSmsRepo _smsRepo;
   final TransactionRepo _txnRepo;
@@ -103,7 +106,10 @@ class SmsService {
     _telephony.listenIncomingSms(
       onNewMessage: (message) async {
         final result = await handleIncoming(
-            message.address, message.body, dateOf(message));
+          message.address,
+          message.body,
+          dateOf(message),
+        );
         if (result.saved != null) onSaved(result.saved!);
       },
       onBackgroundMessage: onBackgroundSms,
@@ -115,7 +121,10 @@ class SmsService {
   /// Every new SMS goes through here: the open-app listener, the background
   /// handler, and the developer Test SMS screen.
   Future<SmsResult> handleIncoming(
-      String? sender, String? body, DateTime receivedAt) async {
+    String? sender,
+    String? body,
+    DateTime receivedAt,
+  ) async {
     final result = await processMessage(sender, body, receivedAt);
     if (result.saved != null) {
       await NotificationService.instance.showDetected(result.saved!);
@@ -159,7 +168,10 @@ class SmsService {
   /// Runs one SMS through every step (no notification). Returns the saved
   /// pending row, or the reason it was ignored.
   Future<SmsResult> processMessage(
-      String? sender, String? body, DateTime receivedAt) async {
+    String? sender,
+    String? body,
+    DateTime receivedAt,
+  ) async {
     if (sender == null || body == null || body.trim().isEmpty) {
       return const SmsResult.ignored('empty SMS');
     }
@@ -175,16 +187,24 @@ class SmsService {
       return const SmsResult.ignored('duplicate (same SMS already stored)');
     }
     if (await _txnRepo.existsSimilar(
-        parsed.amountPaise, parsed.merchant, receivedAt,
-        window: duplicateWindow)) {
+      parsed.amountPaise,
+      parsed.merchant,
+      receivedAt,
+      window: duplicateWindow,
+    )) {
       return const SmsResult.ignored(
-          'duplicate (matches a transaction within 2 minutes)');
+        'duplicate (matches a transaction within 2 minutes)',
+      );
     }
     if (await _smsRepo.existsSimilarPending(
-        parsed.amountPaise, parsed.merchant, receivedAt,
-        window: duplicateWindow)) {
+      parsed.amountPaise,
+      parsed.merchant,
+      receivedAt,
+      window: duplicateWindow,
+    )) {
       return const SmsResult.ignored(
-          'duplicate (matches a detected SMS within 2 minutes)');
+        'duplicate (matches a detected SMS within 2 minutes)',
+      );
     }
 
     final sms = DetectedSms(

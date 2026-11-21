@@ -16,6 +16,16 @@ class TransactionRepo {
     return db.insert(_table, txn.toMap()..remove('id'));
   }
 
+  /// Inserts many rows in one batch (used by "Load demo data").
+  Future<void> insertAll(List<TransactionModel> txns) async {
+    final db = await _helper.database;
+    final batch = db.batch();
+    for (final t in txns) {
+      batch.insert(_table, t.toMap()..remove('id'));
+    }
+    await batch.commit(noResult: true);
+  }
+
   Future<int> update(TransactionModel txn) async {
     final db = await _helper.database;
     return db.update(_table, txn.toMap(), where: 'id = ?', whereArgs: [txn.id]);

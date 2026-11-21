@@ -5,6 +5,7 @@ import '../models/budget.dart';
 import '../models/category_model.dart';
 import '../models/category_total.dart';
 import '../models/transaction_model.dart';
+import '../services/budget_carry_over.dart';
 import '../utils/formatters.dart';
 import 'transaction_provider.dart';
 
@@ -138,6 +139,9 @@ class DashboardProvider extends ChangeNotifier {
   Future<void> loadBudget() async {
     final requested = _month;
     try {
+      if (requested == _monthOf(DateTime.now())) {
+        await BudgetCarryOver.ensureCurrentMonth(repo: _budgetRepo);
+      }
       final b = await _budgetRepo.getOverall(monthKey(requested));
       // Ignore the answer if the user switched month while we waited.
       if (requested != _month) return;

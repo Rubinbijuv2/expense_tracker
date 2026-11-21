@@ -46,14 +46,22 @@ void main() {
   group('BudgetAlertService.alertText', () {
     test('80% text', () {
       final (title, body) = BudgetAlertService.alertText(
-          BudgetAlert.reached80, 'Food budget', 400000, limit);
+        BudgetAlert.reached80,
+        'Food budget',
+        400000,
+        limit,
+      );
       expect(title, '80% of Food budget used');
       expect(body, '₹4,000 of ₹5,000 spent this month.');
     });
 
     test('100% text', () {
       final (title, body) = BudgetAlertService.alertText(
-          BudgetAlert.reached100, 'monthly budget', 520050, limit);
+        BudgetAlert.reached100,
+        'monthly budget',
+        520050,
+        limit,
+      );
       expect(title, 'Monthly budget exceeded');
       expect(body, 'You have spent ₹5,200.50 of your ₹5,000 monthly budget.');
     });

@@ -8,6 +8,20 @@ import '../../providers/detected_sms_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../services/backup_service.dart';
 
+/// After the database changed (restore, delete all, demo data), every
+/// provider reads it again. History and Reports follow TransactionProvider
+/// by themselves.
+Future<void> reloadAllData(BuildContext context) async {
+  final txns = context.read<TransactionProvider>();
+  final detected = context.read<DetectedSmsProvider>();
+  final budgets = context.read<BudgetProvider>();
+  final dash = context.read<DashboardProvider>();
+  await txns.load();
+  await detected.load();
+  await budgets.load();
+  await dash.loadBudget();
+}
+
 /// Settings rows: Backup, Restore and Delete all data.
 class DataSection extends StatefulWidget {
   const DataSection({super.key, this.backupService});
@@ -22,19 +36,6 @@ class _DataSectionState extends State<DataSection> {
   late final BackupService _backup = widget.backupService ?? BackupService();
   bool _busy = false;
 
-  /// After the database file changed, every provider reads it again.
-  /// History and Reports follow TransactionProvider by themselves.
-  Future<void> _reloadEverything() async {
-    final txns = context.read<TransactionProvider>();
-    final detected = context.read<DetectedSmsProvider>();
-    final budgets = context.read<BudgetProvider>();
-    final dash = context.read<DashboardProvider>();
-    await txns.load();
-    await detected.load();
-    await budgets.load();
-    await dash.loadBudget();
-  }
-
   /// Runs [job] with a spinner and shows [done] or the error in a SnackBar.
   Future<void> _run(Future<void> Function() job, String done) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -47,7 +48,9 @@ class _DataSectionState extends State<DataSection> {
     } on InvalidBackupException catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Something went wrong: $e')));
+      messenger.showSnackBar(
+        SnackBar(content: Text('Something went wrong: $e')),
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -61,7 +64,8 @@ class _DataSectionState extends State<DataSection> {
     if (file == null || !mounted) return; // user cancelled
     final ok = await _confirm(
       title: 'Restore this backup?',
-      message: 'All data now in the app will be replaced by "${file.name}". '
+      message:
+          'All data now in the app will be replaced by "${file.name}". '
           'Your PIN and name stay the same.',
       action: 'Restore',
     );
@@ -69,14 +73,15 @@ class _DataSectionState extends State<DataSection> {
     await _run(() async {
       final bytes = await file.xFile.readAsBytes();
       await _backup.restoreFromBytes(bytes);
-      if (mounted) await _reloadEverything();
+      if (mounted) await reloadAllData(context);
     }, 'Backup restored');
   }
 
   Future<void> _onDeleteAll() async {
     final ok = await _confirm(
       title: 'Delete all data?',
-      message: 'Every transaction, budget, detected SMS, custom category and '
+      message:
+          'Every transaction, budget, detected SMS, custom category and '
           'learned merchant rule will be deleted. This cannot be undone.\n\n'
           'Tip: make a backup first. Your PIN and name stay the same.',
       action: 'Delete everything',
@@ -85,7 +90,7 @@ class _DataSectionState extends State<DataSection> {
     if (!ok) return;
     await _run(() async {
       await _backup.deleteAllData();
-      if (mounted) await _reloadEverything();
+      if (mounted) await reloadAllData(context);
     }, 'All data deleted');
   }
 
@@ -104,13 +109,15 @@ class _DataSectionState extends State<DataSection> {
         content: Text(message),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             style: danger
                 ? FilledButton.styleFrom(
                     backgroundColor: scheme.error,
-                    foregroundColor: scheme.onError)
+                    foregroundColor: scheme.onError,
+                  )
                 : null,
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(action),

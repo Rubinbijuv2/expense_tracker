@@ -36,11 +36,15 @@ class DetectedSmsProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool _permissionChecked = false;
   bool _smsEnabled = false;
   bool _listening = false;
+  bool _loading = true;
   Future<void>? _started;
 
   /// Pending suggestions, newest first.
   List<DetectedSms> get pending => List.unmodifiable(_pending);
   bool get smsEnabled => _smsEnabled;
+
+  /// True until the pending list has been read the first time.
+  bool get isLoading => _loading;
 
   /// Home shows the "Turn on SMS detection" banner when this is true.
   bool get showPermissionBanner => _permissionChecked && !_smsEnabled;
@@ -68,6 +72,7 @@ class DetectedSmsProvider extends ChangeNotifier with WidgetsBindingObserver {
     } catch (e) {
       debugPrint('Could not load detected SMS: $e');
     }
+    _loading = false;
     notifyListeners();
   }
 
@@ -140,8 +145,14 @@ class DetectedSmsProvider extends ChangeNotifier with WidgetsBindingObserver {
   // ---- Actions from the Detected SMS screen -----------------------------
 
   /// "Save": add the transaction with the guessed category, as it is.
+  /// The screen opens Edit instead when there is no guess (the guessed
+  /// category may have been deleted), so this is never called without one.
   Future<void> save(DetectedSms sms) async {
-    await _txns.add(toTransaction(sms, sms.guessedCategoryId!));
+    final categoryId = sms.guessedCategoryId;
+    if (categoryId == null) {
+      throw StateError('Detected SMS ${sms.id} has no category');
+    }
+    await _txns.add(toTransaction(sms, categoryId));
     await _finish(sms, 'saved');
   }
 

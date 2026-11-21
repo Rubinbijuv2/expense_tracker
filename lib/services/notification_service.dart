@@ -28,21 +28,21 @@ class NotificationService {
 
   static const AndroidNotificationDetails _budgetChannel =
       AndroidNotificationDetails(
-    'budget_alerts',
-    'Budget alerts',
-    channelDescription: 'Warnings when you reach 80% or 100% of a budget',
-    importance: Importance.high,
-    priority: Priority.high,
-  );
+        'budget_alerts',
+        'Budget alerts',
+        channelDescription: 'Warnings when you reach 80% or 100% of a budget',
+        importance: Importance.high,
+        priority: Priority.high,
+      );
 
   static const AndroidNotificationDetails _smsChannel =
       AndroidNotificationDetails(
-    'detected_sms',
-    'Detected bank SMS',
-    channelDescription: 'Suggestions created from your bank and UPI SMS',
-    importance: Importance.high,
-    priority: Priority.high,
-  );
+        'detected_sms',
+        'Detected bank SMS',
+        channelDescription: 'Suggestions created from your bank and UPI SMS',
+        importance: Importance.high,
+        priority: Priority.high,
+      );
 
   /// Sets up the plugin once. [onTap] runs when the user taps a notification
   /// while the app is open or in the background.
@@ -52,8 +52,7 @@ class NotificationService {
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       ),
-      onDidReceiveNotificationResponse:
-          onTap == null ? null : (_) => onTap(),
+      onDidReceiveNotificationResponse: onTap == null ? null : (_) => onTap(),
     );
     _ready = true;
   }
@@ -85,8 +84,12 @@ class NotificationService {
 
   /// "80% of Food budget used" — sent by BudgetAlertService.
   Future<void> showBudgetAlert(int budgetId, String title, String body) =>
-      _safeShow(_budgetIdOffset + budgetId, title, body,
-          channel: _budgetChannel);
+      _safeShow(
+        _budgetIdOffset + budgetId,
+        title,
+        body,
+        channel: _budgetChannel,
+      );
 
   /// Android 13+ needs the user's OK to show notifications. Asked when the
   /// user sets a budget (SMS setup also asks). Does nothing if already granted.
@@ -110,8 +113,12 @@ class NotificationService {
     }
   }
 
-  Future<void> _safeShow(int id, String title, String body,
-      {AndroidNotificationDetails channel = _smsChannel}) async {
+  Future<void> _safeShow(
+    int id,
+    String title,
+    String body, {
+    AndroidNotificationDetails channel = _smsChannel,
+  }) async {
     try {
       await init();
       await _plugin.show(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/dashboard_provider.dart';
@@ -46,7 +47,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildBody(
-      BuildContext context, TransactionProvider txns, DashboardProvider dash) {
+    BuildContext context,
+    TransactionProvider txns,
+    DashboardProvider dash,
+  ) {
     if (txns.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -90,9 +94,10 @@ class HomeScreen extends StatelessWidget {
           CategoryPieChart(totals: s.byCategory),
           const _SectionTitle(title: 'Recent transactions'),
           if (s.recent.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(child: Text('No transactions this month')),
+            _EmptyRecent(
+              message: txns.transactions.isEmpty
+                  ? 'No expenses yet — tap + to add one'
+                  : 'Nothing added in ${DateFormat('MMMM').format(dash.month)}',
             )
           else
             for (final t in s.recent)
@@ -112,6 +117,33 @@ class HomeScreen extends StatelessWidget {
 Future<void> _openBudgets(BuildContext context, DashboardProvider dash) async {
   await BudgetsScreen.open(context, dash.month);
   await dash.loadBudget();
+}
+
+/// Shown under "Recent transactions" when the month has none.
+class _EmptyRecent extends StatelessWidget {
+  const _EmptyRecent({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: Column(
+        children: [
+          Icon(Icons.receipt_long_outlined, size: 40, color: muted),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SectionTitle extends StatelessWidget {

@@ -4,18 +4,24 @@ import 'package:expense_tracker/services/export_service.dart';
 import 'package:expense_tracker/utils/formatters.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-TransactionModel _txn(int id, int paise, String type, DateTime when,
-        {String? merchant, String? note, int cat = 1}) =>
-    TransactionModel(
-      id: id,
-      amountPaise: paise,
-      type: type,
-      categoryId: cat,
-      paymentMode: 'UPI',
-      dateTime: when,
-      merchant: merchant,
-      note: note,
-    );
+TransactionModel _txn(
+  int id,
+  int paise,
+  String type,
+  DateTime when, {
+  String? merchant,
+  String? note,
+  int cat = 1,
+}) => TransactionModel(
+  id: id,
+  amountPaise: paise,
+  type: type,
+  categoryId: cat,
+  paymentMode: 'UPI',
+  dateTime: when,
+  merchant: merchant,
+  note: note,
+);
 
 /// Newest first, like TransactionProvider.
 List<TransactionModel> _sorted(List<TransactionModel> t) =>
@@ -44,7 +50,12 @@ void main() {
       _txn(2, 20000, 'expense', DateTime(2026, 8, 31, 23, 59)),
       _txn(3, 99900, 'income', DateTime(2026, 8, 1)),
       _txn(4, 5000, 'expense', DateTime(2026, 1, 15)),
-      _txn(5, 7000, 'expense', DateTime(2025, 12, 31)), // 7th month back: excluded
+      _txn(
+        5,
+        7000,
+        'expense',
+        DateTime(2025, 12, 31),
+      ), // 7th month back: excluded
     ]);
     final r = ReportSummary.compute(txns, DateTime(2026, 2), today: today);
     expect(r.lastSixMonths.map((m) => m.month).toList(), [
@@ -55,12 +66,24 @@ void main() {
       DateTime(2026, 1),
       DateTime(2026, 2),
     ]);
-    expect(r.lastSixMonths.map((m) => m.spentPaise).toList(),
-        [0, 0, 0, 7000, 5000, 0]);
+    expect(r.lastSixMonths.map((m) => m.spentPaise).toList(), [
+      0,
+      0,
+      0,
+      7000,
+      5000,
+      0,
+    ]);
 
     final r2 = ReportSummary.compute(txns, nov, today: today);
-    expect(r2.lastSixMonths.map((m) => m.spentPaise).toList(),
-        [0, 0, 20000, 0, 0, 10000]); // Jun..Nov
+    expect(r2.lastSixMonths.map((m) => m.spentPaise).toList(), [
+      0,
+      0,
+      20000,
+      0,
+      0,
+      10000,
+    ]); // Jun..Nov
   });
 
   test('daily totals and month boundaries', () {
@@ -82,24 +105,37 @@ void main() {
     expect(r.transactions.length, 4); // includes income
   });
 
-  test('average per day: days so far for this month, all days for past months', () {
-    final txns = [_txn(1, 21000, 'expense', DateTime(2026, 11, 2))];
-    final current = ReportSummary.compute(txns, nov, today: today);
-    expect(current.daysCounted, 21);
-    expect(current.averagePerDayPaise, 1000);
+  test(
+    'average per day: days so far for this month, all days for past months',
+    () {
+      final txns = [_txn(1, 21000, 'expense', DateTime(2026, 11, 2))];
+      final current = ReportSummary.compute(txns, nov, today: today);
+      expect(current.daysCounted, 21);
+      expect(current.averagePerDayPaise, 1000);
 
-    final past = ReportSummary.compute(txns, nov, today: DateTime(2027, 1, 1));
-    expect(past.daysCounted, 30);
-    expect(past.averagePerDayPaise, 700);
+      final past = ReportSummary.compute(
+        txns,
+        nov,
+        today: DateTime(2027, 1, 1),
+      );
+      expect(past.daysCounted, 30);
+      expect(past.averagePerDayPaise, 700);
 
-    final feb = ReportSummary.compute([], DateTime(2028, 2), today: today);
-    expect(feb.daysInMonth, 29); // leap year
-  });
+      final feb = ReportSummary.compute([], DateTime(2028, 2), today: today);
+      expect(feb.daysInMonth, 29); // leap year
+    },
+  );
 
   test('top merchants: grouped ignoring case, biggest first, max 5', () {
     final d = DateTime(2026, 11, 10);
     final txns = _sorted([
-      _txn(1, 30000, 'expense', d.add(const Duration(hours: 1)), merchant: 'Swiggy'),
+      _txn(
+        1,
+        30000,
+        'expense',
+        d.add(const Duration(hours: 1)),
+        merchant: 'Swiggy',
+      ),
       _txn(2, 20000, 'expense', d, merchant: 'swiggy '),
       _txn(3, 45000, 'expense', d, merchant: 'Amazon'),
       _txn(4, 100, 'expense', d, merchant: 'A'),
@@ -122,8 +158,14 @@ void main() {
   group('export', () {
     test('CSV rows have a header and one row per transaction', () {
       final txns = _sorted([
-        _txn(1, 45050, 'expense', DateTime(2026, 11, 3, 9, 5),
-            merchant: 'Swiggy', note: 'Lunch, with "team"'),
+        _txn(
+          1,
+          45050,
+          'expense',
+          DateTime(2026, 11, 3, 9, 5),
+          merchant: 'Swiggy',
+          note: 'Lunch, with "team"',
+        ),
         _txn(2, 5000000, 'income', DateTime(2026, 11, 1), cat: 9),
       ]);
       final r = ReportSummary.compute(txns, nov, today: today);
@@ -155,8 +197,13 @@ void main() {
     test('PDF builds and starts with the PDF signature', () async {
       final txns = [
         for (var i = 0; i < 80; i++) // enough rows for more than one page
-          _txn(i, 1000 + i, 'expense', DateTime(2026, 11, 1 + i % 20),
-              merchant: 'Shop $i'),
+          _txn(
+            i,
+            1000 + i,
+            'expense',
+            DateTime(2026, 11, 1 + i % 20),
+            merchant: 'Shop $i',
+          ),
       ];
       final r = ReportSummary.compute(_sorted(txns), nov, today: today);
       final bytes = await ExportService.buildPdf(r, _cat);
