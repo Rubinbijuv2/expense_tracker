@@ -1,5 +1,7 @@
 package com.rubin.expense_tracker
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// FlutterFragmentActivity (instead of FlutterActivity) is required by
+// local_auth to show Android's fingerprint popup.
+class MainActivity : FlutterFragmentActivity()

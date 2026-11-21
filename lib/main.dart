@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'providers/app_lock_provider.dart';
 import 'providers/budget_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/detected_sms_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/report_provider.dart';
+import 'providers/settings_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'screens/detected/detected_sms_screen.dart';
+import 'screens/lock/lock_screen.dart';
+import 'screens/onboarding/onboarding_screen.dart';
 import 'services/notification_service.dart';
 import 'utils/constants.dart';
 import 'widgets/main_shell.dart';
@@ -26,10 +30,16 @@ Future<void> main() async {
     debugPrint('Notifications not available: $e');
   }
 
-  runApp(const ExpenseTrackerApp());
+  // Read these before the first frame, so we know whether to show
+  // onboarding or the lock screen without a flash of the Home screen.
+  final settings = await SettingsProvider.load();
+  final lock = await AppLockProvider.load();
+
+  runApp(ExpenseTrackerApp(settings: settings, lock: lock));
 
   // App was closed and the user tapped "₹450 paid to Swiggy — tap to add".
-  if (openDetected) {
+  // (The lock screen still covers it until the PIN is entered.)
+  if (openDetected && settings.onboardingDone) {
     WidgetsBinding.instance.addPostFrameCallback((_) => _openDetectedScreen());
   }
 }
@@ -41,11 +51,20 @@ void _openDetectedScreen() {
 }
 
 class ExpenseTrackerApp extends StatelessWidget {
-  const ExpenseTrackerApp({super.key});
+  const ExpenseTrackerApp({
+    super.key,
+    required this.settings,
+    required this.lock,
+  });
+
+  final SettingsProvider settings;
+  final AppLockProvider lock;
 
   @override
   Widget build(BuildContext context) {
     // MultiProvider puts several providers above every screen.
+    // SettingsProvider / AppLockProvider: already loaded in main(), so they
+    //   are passed in with `.value`.
     // TransactionProvider: `..load()` reads the database as soon as it is created.
     // DashboardProvider: gets the TransactionProvider so it can listen to it.
     // DetectedSmsProvider: `..start()` checks SMS permission and starts detection.
@@ -54,6 +73,8 @@ class ExpenseTrackerApp extends StatelessWidget {
     // ReportProvider: month, charts data and CSV/PDF export for Reports.
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: settings),
+        ChangeNotifierProvider.value(value: lock),
         ChangeNotifierProvider(create: (_) => TransactionProvider()..load()),
         ChangeNotifierProvider(
           create: (context) =>
@@ -76,16 +97,54 @@ class ExpenseTrackerApp extends StatelessWidget {
               ReportProvider(context.read<TransactionProvider>()),
         ),
       ],
-      child: MaterialApp(
-        navigatorKey: navigatorKey,
-        title: AppConstants.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        // Follows the phone's light/dark setting. A Settings option comes in step 10.
-        themeMode: ThemeMode.system,
-        home: const MainShell(),
+      // Consumer rebuilds only the MaterialApp when the theme setting changes.
+      child: Consumer<SettingsProvider>(
+        builder: (context, s, _) => MaterialApp(
+          navigatorKey: navigatorKey,
+          title: AppConstants.appName,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: s.themeMode,
+          home: const AppGate(),
+          // `builder` wraps every screen. The lock screen is drawn on top of
+          // the Navigator, so whatever screen was open stays underneath.
+          builder: (context, child) => _LockOverlay(child: child!),
+        ),
       ),
+    );
+  }
+}
+
+/// First launch → onboarding. Afterwards → the main app.
+class AppGate extends StatelessWidget {
+  const AppGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final done = context.select<SettingsProvider, bool>((s) => s.onboardingDone);
+    return done ? const MainShell() : const OnboardingScreen();
+  }
+}
+
+class _LockOverlay extends StatelessWidget {
+  const _LockOverlay({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final locked = context.select<AppLockProvider, bool>((l) => l.isLocked);
+    final onboardingDone =
+        context.select<SettingsProvider, bool>((s) => s.onboardingDone);
+    final showLock = locked && onboardingDone;
+    return Stack(
+      children: [
+        // Offstage hides the app (it is not painted, so nothing shows through)
+        // but keeps its state alive.
+        Offstage(offstage: showLock, child: child),
+        if (showLock) const Positioned.fill(child: LockScreen()),
+      ],
     );
   }
 }

@@ -98,6 +98,37 @@ class TransactionProvider extends ChangeNotifier {
     await _budgetAlerts.checkAfterSave(txn);
   }
 
+  // ---- Categories (Settings → Manage categories) ---------------------------
+
+  /// All categories, defaults first.
+  List<CategoryModel> get allCategories => _categories.values.toList();
+
+  /// True if another category of the same type already has this name.
+  bool categoryNameTaken(String name, String type, {int? exceptId}) =>
+      _categories.values.any((c) =>
+          c.type == type &&
+          c.id != exceptId &&
+          c.name.toLowerCase() == name.trim().toLowerCase());
+
+  Future<void> saveCategory(CategoryModel category) async {
+    if (category.id == null) {
+      await _categoryRepo.insert(category);
+    } else {
+      await _categoryRepo.update(category);
+    }
+    await load();
+  }
+
+  /// Deletes a custom category. Returns false (and deletes nothing) if a
+  /// transaction still uses it, or if it is one of the default categories.
+  Future<bool> deleteCategory(CategoryModel category) async {
+    if (category.isDefault || category.id == null) return false;
+    if (await _categoryRepo.isUsed(category.id!)) return false;
+    await _categoryRepo.delete(category.id!);
+    await load();
+    return true;
+  }
+
   /// Transactions grouped by day, newest day first, with daily totals.
   List<DayGroup> get groupedByDay => groupByDay(_transactions);
 

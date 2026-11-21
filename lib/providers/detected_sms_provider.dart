@@ -108,6 +108,16 @@ class DetectedSmsProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// Onboarding already explained SMS detection, so Home must not ask again.
+  Future<void> markPermissionAsked() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_askedKey, true);
+    } catch (e) {
+      debugPrint('Could not save SMS asked flag: $e');
+    }
+  }
+
   /// After the user agreed in our explanation dialog: ask Android.
   Future<void> requestPermission() async {
     try {

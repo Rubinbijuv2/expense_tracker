@@ -28,10 +28,12 @@ class DbHelper {
     return _db ??= await _open();
   }
 
+  /// Full path of the database file on the phone (used by backup/restore).
+  Future<String> get path async => join(await getDatabasesPath(), dbName);
+
   Future<Database> _open() async {
-    final dir = await getDatabasesPath();
     return openDatabase(
-      join(dir, dbName),
+      await path,
       version: dbVersion,
       // SQLite ignores foreign keys unless this is turned on for every connection.
       onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
@@ -129,7 +131,29 @@ class DbHelper {
     await batch.commit(noResult: true);
   }
 
-  /// Closes the database (used later by backup/restore).
+  /// "Delete all data": empties every table in one transaction and inserts
+  /// the default categories again. Ids start from 1 again afterwards.
+  Future<void> resetAllData() async {
+    final db = await database;
+    await db.transaction((txn) async {
+      // Children first, so foreign keys never block a delete.
+      for (final t in [
+        tTransactions,
+        tBudgets,
+        tMerchantRules,
+        tDetectedSms,
+        tCategories,
+      ]) {
+        await txn.delete(t);
+      }
+      await txn.delete('sqlite_sequence');
+      for (final c in defaultCategories) {
+        await txn.insert(tCategories, c.toMap());
+      }
+    });
+  }
+
+  /// Closes the database. The next `database` call opens it again.
   Future<void> close() async {
     await _db?.close();
     _db = null;
