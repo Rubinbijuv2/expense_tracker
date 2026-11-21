@@ -177,6 +177,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           child: TransactionTile(
             txn: t,
             category: history.categoryById(t.categoryId),
+            refundedPaise: txnProvider.refundedPaise(t.id),
             onTap: () => AddEditScreen.open(context, txn: t),
           ),
         ));

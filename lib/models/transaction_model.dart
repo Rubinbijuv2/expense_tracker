@@ -104,6 +104,26 @@ class TransactionModel {
     isSelfTransfer: isSelfTransfer ?? this.isSelfTransfer,
   );
 
+  /// Same transaction linked to the expense [expenseId] it refunds
+  /// (null removes the link). Separate from [copyWith], whose `null`
+  /// means "keep the old value".
+  TransactionModel withRefundOf(int? expenseId) => TransactionModel(
+    id: id,
+    amountPaise: amountPaise,
+    type: type,
+    categoryId: categoryId,
+    paymentMode: paymentMode,
+    dateTime: dateTime,
+    note: note,
+    merchant: merchant,
+    source: source,
+    smsId: smsId,
+    createdAt: createdAt,
+    recurringId: recurringId,
+    refundOfId: expenseId,
+    isSelfTransfer: isSelfTransfer,
+  );
+
   @override
   String toString() =>
       'TransactionModel($id, $type, $amountPaise paise, cat $categoryId, '

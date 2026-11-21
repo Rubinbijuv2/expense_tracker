@@ -13,10 +13,12 @@ import 'providers/repeat_suggestion_provider.dart';
 import 'providers/report_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/transaction_provider.dart';
+import 'screens/add_edit/add_edit_screen.dart';
 import 'screens/detected/detected_sms_screen.dart';
 import 'screens/lock/lock_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/recurring/reminder_actions.dart';
+import 'services/cash_reminder_service.dart';
 import 'services/notification_service.dart';
 import 'services/reminder_planner.dart';
 import 'utils/constants.dart';
@@ -43,8 +45,14 @@ Future<void> main() async {
 
   runApp(ExpenseTrackerApp(settings: settings, lock: lock));
 
+  // Daily "Spent any cash today?" reminder: scheduled again on every start,
+  // so a changed time zone or a cleared alarm is fixed. Not awaited, so it
+  // never slows down opening the app.
+  settings.applyCashReminder();
+
   // App was closed and the user tapped one of our notifications
-  // ("₹450 paid to Swiggy — tap to add", or a repeat-payment reminder).
+  // ("₹450 paid to Swiggy — tap to add", a repeat-payment reminder or the
+  // daily cash reminder).
   // (The lock screen still covers it until the PIN is entered.)
   if (launchTap != null && settings.onboardingDone) {
     final tap = launchTap;
@@ -54,6 +62,15 @@ Future<void> main() async {
 
 /// A notification, or one of its buttons that opens the app, was tapped.
 void _onNotificationTap(NotificationResponse r) {
+  if (r.payload == CashReminderService.payload) {
+    final nav = navigatorKey.currentState;
+    nav?.push(
+      MaterialPageRoute(
+        builder: (_) => const AddEditScreen(initialPaymentMode: 'Cash'),
+      ),
+    );
+    return;
+  }
   final reminder = ReminderPayload.parse(r.payload);
   if (reminder != null) {
     final context = navigatorKey.currentContext;

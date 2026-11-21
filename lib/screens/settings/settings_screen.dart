@@ -8,6 +8,7 @@ import '../../utils/constants.dart';
 import '../budgets/budgets_screen.dart';
 import '../categories/categories_screen.dart';
 import '../recurring/recurring_list_screen.dart';
+import 'cash_reminder_section.dart';
 import 'change_pin_screen.dart';
 import 'data_section.dart';
 import 'developer_section.dart';
@@ -204,6 +205,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: const Text('Your own accounts, to spot self transfers'),
             onTap: () => MyAccountsScreen.open(context),
           ),
+          const _Header('Reminders'),
+          const CashReminderSection(),
           const _Header('Data'),
           const DataSection(),
           // kDebugMode is true only in `flutter run` builds, so while

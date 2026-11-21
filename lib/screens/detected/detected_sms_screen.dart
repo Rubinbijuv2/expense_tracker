@@ -8,6 +8,7 @@ import '../../providers/recurring_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/placeholder_body.dart';
+import '../../widgets/refund_link_prompt.dart';
 import '../add_edit/add_edit_screen.dart';
 import 'detected_sms_card.dart';
 import 'merge_card.dart';
@@ -121,10 +122,12 @@ class DetectedSmsScreen extends StatelessWidget {
     }
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await context.read<DetectedSmsProvider>().save(sms);
+      final txn = await context.read<DetectedSmsProvider>().save(sms);
       messenger.showSnackBar(
         SnackBar(content: Text('Saved ${formatPaise(sms.amountPaise)}')),
       );
+      // A refund SMS: offer to link it to the expense it pays back.
+      if (context.mounted) await offerRefundLink(context, txn);
     } catch (e) {
       messenger.showSnackBar(
         const SnackBar(content: Text('Could not save. Please try again.')),

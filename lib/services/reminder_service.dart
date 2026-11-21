@@ -25,9 +25,10 @@ class ReminderService {
   static const String _channelId = 'repeat_reminders';
   static const String _channelName = 'Repeat payment reminders';
 
+  /// Also used by CashReminderService.
   /// The `timezone` package needs to know the phone's time zone
   /// (for example Asia/Kolkata) to turn "9:00 AM" into an exact moment.
-  Future<void> _initTimeZone() async {
+  Future<void> initTimeZone() async {
     if (_tzReady) return;
     tzdata.initializeTimeZones();
     try {
@@ -57,7 +58,7 @@ class ReminderService {
   ) async {
     try {
       await NotificationService.instance.init();
-      await _initTimeZone();
+      await initTimeZone();
       final plugin = NotificationService.instance.plugin;
       for (final old in await plugin.pendingNotificationRequests()) {
         if (ReminderPlanner.isReminderId(old.id)) {
@@ -140,7 +141,7 @@ class ReminderService {
     RecurringInstallment inst,
   ) async {
     await NotificationService.instance.init();
-    await _initTimeZone();
+    await initTimeZone();
     final at = DateTime.now().add(const Duration(minutes: 1));
     final r = _testReminder(p, inst, at);
     await _schedule(r, tz.TZDateTime.from(at, tz.local));

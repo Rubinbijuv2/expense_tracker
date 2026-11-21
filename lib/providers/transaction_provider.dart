@@ -5,6 +5,7 @@ import '../data/transaction_repo.dart';
 import '../models/category_model.dart';
 import '../models/transaction_model.dart';
 import '../services/budget_alert_service.dart';
+import '../services/refund_matcher.dart';
 
 /// All transactions of one calendar day, with that day's totals.
 class DayGroup {
@@ -35,6 +36,7 @@ class TransactionProvider extends ChangeNotifier {
 
   List<TransactionModel> _transactions = [];
   Map<int, CategoryModel> _categories = {};
+  Map<int, int> _refunded = {}; // expense id → refunded paise
   bool _loading = true;
   String? _error;
 
@@ -55,6 +57,7 @@ class TransactionProvider extends ChangeNotifier {
       final cats = await _categoryRepo.getAll();
       _categories = {for (final c in cats) c.id!: c};
       _transactions = await _txnRepo.getAll();
+      _refunded = RefundMatcher.refundedTotals(_transactions);
       _error = null;
     } catch (e) {
       _error = 'Could not load transactions: $e';
@@ -98,6 +101,34 @@ class TransactionProvider extends ChangeNotifier {
     await _txnRepo.restore(txn);
     await load();
     await _budgetAlerts.checkAfterSave(txn);
+  }
+
+  // ---- Refunds (PLAN.md section 6.2) --------------------------------------
+
+  /// Total refunded on the expense [expenseId] ("Refunded ₹X"), 0 if none.
+  int refundedPaise(int? expenseId) =>
+      expenseId == null ? 0 : (_refunded[expenseId] ?? 0);
+
+  /// True if [txn] is income in the "Refund" category.
+  bool isRefund(TransactionModel txn) =>
+      !txn.isExpense && RefundMatcher.isRefundCategory(categoryById(txn.categoryId));
+
+  /// Recent expenses that the refund [txn] may belong to.
+  List<TransactionModel> refundCandidates(TransactionModel txn) =>
+      RefundMatcher.candidates(txn, _transactions);
+
+  TransactionModel? byId(int? id) {
+    if (id == null) return null;
+    for (final t in _transactions) {
+      if (t.id == id) return t;
+    }
+    return null;
+  }
+
+  /// Links the saved refund [refund] to [expenseId] (null removes the link).
+  Future<void> linkRefund(TransactionModel refund, int? expenseId) async {
+    await _txnRepo.update(refund.withRefundOf(expenseId));
+    await load();
   }
 
   // ---- Categories (Settings → Manage categories) ---------------------------

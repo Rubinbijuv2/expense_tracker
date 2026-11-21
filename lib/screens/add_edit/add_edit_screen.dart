@@ -1,27 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/detected_sms.dart';
 import '../../models/transaction_model.dart';
 import '../../providers/detected_sms_provider.dart';
 import '../../providers/transaction_provider.dart';
+import '../../services/refund_matcher.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
 import '../../utils/validators.dart';
 import '../../widgets/mark_paid_prompt.dart';
+import '../../widgets/refund_link_prompt.dart';
 import '../../widgets/transaction_tile.dart';
 import 'category_grid.dart';
+import 'form_parts.dart';
 import 'payment_mode_chips.dart';
 
 /// Add a new transaction, edit [existing], or review a detected SMS
-/// ([fromSms]) before saving it.
+/// ([fromSms]) before saving it. [initialPaymentMode] pre-selects a mode
+/// for a new transaction (the daily cash reminder passes 'Cash').
 class AddEditScreen extends StatefulWidget {
-  const AddEditScreen({super.key, this.existing, this.fromSms});
+  const AddEditScreen({
+    super.key,
+    this.existing,
+    this.fromSms,
+    this.initialPaymentMode,
+  });
 
   final TransactionModel? existing;
   final DetectedSms? fromSms;
+  final String? initialPaymentMode;
 
   /// Opens this screen. Used by the + buttons and by tapping a row.
   static Future<void> open(BuildContext context, {TransactionModel? txn}) {
@@ -52,6 +61,7 @@ class _AddEditScreenState extends State<AddEditScreen> {
   late String _paymentMode;
   late DateTime _dateTime;
   String? _categoryError;
+  int? _refundOfId; // expense this refund belongs to (Refund category only)
   bool _saving = false;
 
   bool get _isEdit => widget.existing != null;
@@ -62,8 +72,11 @@ class _AddEditScreenState extends State<AddEditScreen> {
     final t = widget.existing;
     _type = t?.type ?? 'expense';
     _categoryId = t?.categoryId;
-    _paymentMode = t?.paymentMode ?? AppConstants.defaultPaymentMode;
+    _paymentMode = t?.paymentMode ??
+        widget.initialPaymentMode ??
+        AppConstants.defaultPaymentMode;
     _dateTime = t?.dateTime ?? DateTime.now();
+    _refundOfId = t?.refundOfId;
     if (t != null) {
       _amountCtrl.text = paiseToInput(t.amountPaise);
       _noteCtrl.text = t.note ?? '';
@@ -137,7 +150,8 @@ class _AddEditScreenState extends State<AddEditScreen> {
       createdAt: old?.createdAt,
       // Keep the links an edit can't change on this screen.
       recurringId: old?.recurringId,
-      refundOfId: old?.refundOfId,
+      // Only a Refund keeps its link; changing the category drops it.
+      refundOfId: _isRefundCategory(provider) ? _refundOfId : null,
       isSelfTransfer: old?.isSelfTransfer ?? sms?.isSelfTransfer ?? false,
     );
 
@@ -155,6 +169,10 @@ class _AddEditScreenState extends State<AddEditScreen> {
       }
       // A new expense that matches a due repeat payment: ask to mark it.
       if (!_isEdit && mounted) await offerMarkPaid(context, saved);
+      // A new Refund (or an edit that just made it one): offer to link it
+      // to the expense it pays back. Existing refunds use the link row.
+      final wasRefund = old != null && provider.isRefund(old);
+      if (!wasRefund && mounted) await offerRefundLink(context, saved);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
@@ -164,6 +182,11 @@ class _AddEditScreenState extends State<AddEditScreen> {
       );
     }
   }
+
+  /// True when the form has the income category "Refund" selected.
+  bool _isRefundCategory(TransactionProvider p) =>
+      _categoryId != null &&
+      RefundMatcher.isRefundCategory(p.categoryById(_categoryId!));
 
   Future<void> _delete() async {
     final ok = await showDialog<bool>(
@@ -212,20 +235,7 @@ class _AddEditScreenState extends State<AddEditScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(
-                    value: 'expense',
-                    label: Text('Expense'),
-                    icon: Icon(Icons.arrow_upward)),
-                ButtonSegment(
-                    value: 'income',
-                    label: Text('Income'),
-                    icon: Icon(Icons.arrow_downward)),
-              ],
-              selected: {_type},
-              onSelectionChanged: (s) => _changeType(s.first),
-            ),
+            TypeToggle(type: _type, onChanged: _changeType),
             const SizedBox(height: 16),
             TextFormField(
               controller: _amountCtrl,
@@ -271,14 +281,14 @@ class _AddEditScreenState extends State<AddEditScreen> {
               onSelected: (mode) => setState(() => _paymentMode = mode),
             ),
             const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.event),
-              title: Text(DateFormat('EEE, d MMM yyyy · h:mm a')
-                  .format(_dateTime)),
-              trailing: const Icon(Icons.edit_calendar_outlined),
-              onTap: _pickDateTime,
-            ),
+            DateTimeTile(dateTime: _dateTime, onTap: _pickDateTime),
+            // Editing a saved Refund: which expense it pays back.
+            if (_isEdit && _isRefundCategory(provider))
+              RefundLinkTile(
+                refund: widget.existing!,
+                linkedId: _refundOfId,
+                onChanged: (id) => setState(() => _refundOfId = id),
+              ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _noteCtrl,

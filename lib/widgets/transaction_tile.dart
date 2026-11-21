@@ -9,17 +9,20 @@ import '../utils/formatters.dart';
 
 /// One transaction row: category icon, name, note/merchant, mode, time, amount.
 /// A self transfer is drawn grey with its amount struck through.
+/// An expense with linked refunds shows "Refunded ₹X" under its amount.
 class TransactionTile extends StatelessWidget {
   const TransactionTile({
     super.key,
     required this.txn,
     required this.category,
     this.onTap,
+    this.refundedPaise = 0,
   });
 
   final TransactionModel txn;
   final CategoryModel? category; // null if the category was not found
   final VoidCallback? onTap;
+  final int refundedPaise; // total of refunds linked to this expense
 
   @override
   Widget build(BuildContext context) {
@@ -45,15 +48,27 @@ class TransactionTile extends StatelessWidget {
       ),
       title: Text(category?.name ?? 'Unknown'),
       subtitle: Text(details, maxLines: 1, overflow: TextOverflow.ellipsis),
-      trailing: Text(
-        '${txn.isExpense ? '−' : '+'}${formatPaise(txn.amountPaise)}',
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: self
-                  ? scheme.outline
-                  : (txn.isExpense ? scheme.error : Colors.green.shade600),
-              fontWeight: FontWeight.w600,
-              decoration: self ? TextDecoration.lineThrough : null,
+      trailing: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            '${txn.isExpense ? '−' : '+'}${formatPaise(txn.amountPaise)}',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: self
+                      ? scheme.outline
+                      : (txn.isExpense ? scheme.error : Colors.green.shade600),
+                  fontWeight: FontWeight.w600,
+                  decoration: self ? TextDecoration.lineThrough : null,
+                ),
+          ),
+          if (txn.isExpense && refundedPaise > 0)
+            Text(
+              'Refunded ${formatPaise(refundedPaise)}',
+              style: Theme.of(context).textTheme.labelSmall
+                  ?.copyWith(color: Colors.green.shade600),
             ),
+        ],
       ),
     );
   }

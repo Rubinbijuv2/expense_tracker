@@ -117,6 +117,7 @@ class HomeScreen extends StatelessWidget {
               TransactionTile(
                 txn: t,
                 category: txns.categoryById(t.categoryId),
+                refundedPaise: txns.refundedPaise(t.id),
                 onTap: () => AddEditScreen.open(context, txn: t),
               ),
         ],
