@@ -68,30 +68,13 @@ class SummaryCards extends StatelessWidget {
       );
     }
 
+    // The coloured bar is in BudgetBarCard just below these cards.
     final left = limit - spentPaise;
-    final used = spentPaise / limit; // 0.0 – 1.0+ (only for the bar colour)
-    // Plan: green → amber at 80% → red at 100%.
-    final barColor = used >= 1
-        ? scheme.error
-        : used >= 0.8
-            ? Colors.amber.shade700
-            : Colors.green.shade600;
-
     return _StatCard(
       label: left < 0 ? 'Over budget' : 'Budget left',
       icon: Icons.savings_outlined,
       value: formatPaise(left.abs()),
       color: left < 0 ? scheme.error : scheme.onSurface,
-      footer: Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: LinearProgressIndicator(
-          value: used.clamp(0.0, 1.0),
-          color: barColor,
-          backgroundColor: barColor.withValues(alpha: 0.2),
-          minHeight: 6,
-          borderRadius: BorderRadius.circular(3),
-        ),
-      ),
     );
   }
 }
@@ -102,14 +85,12 @@ class _StatCard extends StatelessWidget {
     required this.icon,
     required this.value,
     required this.color,
-    this.footer,
   });
 
   final String label;
   final IconData icon;
   final String value;
   final Color color;
-  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -142,8 +123,6 @@ class _StatCard extends StatelessWidget {
                       color: color, fontWeight: FontWeight.w600),
                 ),
               ),
-              // `?footer` adds the widget only if it is not null.
-              ?footer,
             ],
           ),
         ),

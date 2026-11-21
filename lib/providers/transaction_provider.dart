@@ -4,6 +4,7 @@ import '../data/category_repo.dart';
 import '../data/transaction_repo.dart';
 import '../models/category_model.dart';
 import '../models/transaction_model.dart';
+import '../services/budget_alert_service.dart';
 
 /// All transactions of one calendar day, with that day's totals.
 class DayGroup {
@@ -20,12 +21,17 @@ class DayGroup {
 /// A ChangeNotifier is an object that calls `notifyListeners()` when its data
 /// changes; every screen watching it (via `context.watch`) then rebuilds.
 class TransactionProvider extends ChangeNotifier {
-  TransactionProvider({TransactionRepo? transactionRepo, CategoryRepo? categoryRepo})
-      : _txnRepo = transactionRepo ?? TransactionRepo(),
-        _categoryRepo = categoryRepo ?? CategoryRepo();
+  TransactionProvider({
+    TransactionRepo? transactionRepo,
+    CategoryRepo? categoryRepo,
+    BudgetAlertService? budgetAlerts,
+  })  : _txnRepo = transactionRepo ?? TransactionRepo(),
+        _categoryRepo = categoryRepo ?? CategoryRepo(),
+        _budgetAlerts = budgetAlerts ?? BudgetAlertService();
 
   final TransactionRepo _txnRepo;
   final CategoryRepo _categoryRepo;
+  final BudgetAlertService _budgetAlerts;
 
   List<TransactionModel> _transactions = [];
   Map<int, CategoryModel> _categories = {};
@@ -58,14 +64,18 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Every save (manual or from a detected SMS) goes through [add] or
+  /// [update], so this is the one place where budgets are checked.
   Future<void> add(TransactionModel txn) async {
     await _txnRepo.insert(txn);
     await load();
+    await _budgetAlerts.checkAfterSave(txn);
   }
 
   Future<void> update(TransactionModel txn) async {
     await _txnRepo.update(txn);
     await load();
+    await _budgetAlerts.checkAfterSave(txn);
   }
 
   /// Removes [txn] from the list right away (the swiped row must disappear
@@ -85,6 +95,7 @@ class TransactionProvider extends ChangeNotifier {
   Future<void> restore(TransactionModel txn) async {
     await _txnRepo.restore(txn);
     await load();
+    await _budgetAlerts.checkAfterSave(txn);
   }
 
   /// Transactions grouped by day, newest day first, with daily totals.

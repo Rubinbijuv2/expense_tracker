@@ -87,4 +87,43 @@ class BudgetRepo {
       ));
     }
   }
+
+  /// "Copy last month's budgets": copies every budget of the most recent
+  /// earlier month that has any into [month], with alerts reset.
+  /// Skips budgets [month] already has. Returns how many were copied.
+  Future<int> copyFromLatestBefore(String month) async {
+    final from = await latestMonthBefore(month);
+    if (from == null) return 0;
+
+    final db = await _helper.database;
+    final source = await getForMonth(from);
+    final existing = await getForMonth(month);
+    final taken = existing.map((b) => b.categoryId).toSet();
+    var copied = 0;
+    // A transaction: all rows are copied, or none if something fails.
+    await db.transaction((txn) async {
+      for (final b in source) {
+        if (taken.contains(b.categoryId)) continue;
+        await txn.insert(_table, {
+          'month': month,
+          'category_id': b.categoryId,
+          'limit_paise': b.limitPaise,
+          'alert_80_sent': 0,
+          'alert_100_sent': 0,
+        });
+        copied++;
+      }
+    });
+    return copied;
+  }
+
+  /// The month (YYYY-MM) of the latest budgets before [month], or null.
+  Future<String?> latestMonthBefore(String month) async {
+    final db = await _helper.database;
+    final rows = await db.rawQuery(
+      'SELECT MAX(month) AS m FROM $_table WHERE month < ?',
+      [month],
+    );
+    return rows.first['m'] as String?;
+  }
 }

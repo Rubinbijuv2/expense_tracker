@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../models/detected_sms.dart';
 import '../utils/formatters.dart';
@@ -18,10 +19,21 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
   bool _ready = false;
 
-  // Notification ids: one fixed id for the inbox-scan summary, and
-  // 1000 + detected_sms.id for each SMS, so ids never clash.
+  // Notification ids: one fixed id for the inbox-scan summary,
+  // 1000 + detected_sms.id for each SMS and 1000000 + budgets.id for
+  // budget alerts, so ids never clash.
   static const int _scanSummaryId = 1;
   static const int _smsIdOffset = 1000;
+  static const int _budgetIdOffset = 1000000;
+
+  static const AndroidNotificationDetails _budgetChannel =
+      AndroidNotificationDetails(
+    'budget_alerts',
+    'Budget alerts',
+    channelDescription: 'Warnings when you reach 80% or 100% of a budget',
+    importance: Importance.high,
+    priority: Priority.high,
+  );
 
   static const AndroidNotificationDetails _smsChannel =
       AndroidNotificationDetails(
@@ -71,6 +83,23 @@ class NotificationService {
     );
   }
 
+  /// "80% of Food budget used" — sent by BudgetAlertService.
+  Future<void> showBudgetAlert(int budgetId, String title, String body) =>
+      _safeShow(_budgetIdOffset + budgetId, title, body,
+          channel: _budgetChannel);
+
+  /// Android 13+ needs the user's OK to show notifications. Asked when the
+  /// user sets a budget (SMS setup also asks). Does nothing if already granted.
+  Future<void> requestPermission() async {
+    try {
+      if (!await Permission.notification.isGranted) {
+        await Permission.notification.request();
+      }
+    } catch (e) {
+      debugPrint('Notification permission request failed: $e');
+    }
+  }
+
   /// Removes the notification of an SMS once it is saved or ignored.
   Future<void> cancelForSms(int smsId) async {
     if (!_ready) return;
@@ -81,17 +110,18 @@ class NotificationService {
     }
   }
 
-  Future<void> _safeShow(int id, String title, String body) async {
+  Future<void> _safeShow(int id, String title, String body,
+      {AndroidNotificationDetails channel = _smsChannel}) async {
     try {
       await init();
       await _plugin.show(
         id: id,
         title: title,
         body: body,
-        notificationDetails: const NotificationDetails(android: _smsChannel),
+        notificationDetails: NotificationDetails(android: channel),
       );
     } catch (e) {
-      // Notifications are a bonus: never let them break SMS detection.
+      // Notifications are a bonus: never let them break SMS detection or saving.
       debugPrint('Could not show notification: $e');
     }
   }

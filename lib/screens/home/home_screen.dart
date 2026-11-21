@@ -7,6 +7,8 @@ import '../../providers/transaction_provider.dart';
 import '../../widgets/placeholder_body.dart';
 import '../../widgets/transaction_tile.dart';
 import '../add_edit/add_edit_screen.dart';
+import '../budgets/budgets_screen.dart';
+import 'budget_bar_card.dart';
 import 'category_pie_chart.dart';
 import 'detected_sms_strip.dart';
 import 'month_switcher.dart';
@@ -23,7 +25,16 @@ class HomeScreen extends StatelessWidget {
     final dash = context.watch<DashboardProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Home')),
+      appBar: AppBar(
+        title: const Text('Home'),
+        actions: [
+          IconButton(
+            tooltip: 'Budgets',
+            icon: const Icon(Icons.savings_outlined),
+            onPressed: () => _openBudgets(context, dash),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'fab_home', // must differ from History's + button
         tooltip: 'Add transaction',
@@ -70,6 +81,11 @@ class HomeScreen extends StatelessWidget {
             balancePaise: s.balancePaise,
             budgetLimitPaise: dash.budget?.limitPaise,
           ),
+          BudgetBarCard(
+            spentPaise: s.spentPaise,
+            limitPaise: dash.budget?.limitPaise,
+            onTap: () => _openBudgets(context, dash),
+          ),
           const DetectedSmsStrip(),
           CategoryPieChart(totals: s.byCategory),
           const _SectionTitle(title: 'Recent transactions'),
@@ -89,6 +105,13 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Opens Budgets on the month Home shows, then reloads Home's budget
+/// (it may have been changed there).
+Future<void> _openBudgets(BuildContext context, DashboardProvider dash) async {
+  await BudgetsScreen.open(context, dash.month);
+  await dash.loadBudget();
 }
 
 class _SectionTitle extends StatelessWidget {
