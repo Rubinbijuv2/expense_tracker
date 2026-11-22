@@ -4,12 +4,12 @@ import 'package:provider/provider.dart';
 
 import '../../providers/budget_provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../providers/data_provider.dart';
 import '../../providers/detected_sms_provider.dart';
 import '../../providers/own_accounts_provider.dart';
 import '../../providers/recurring_provider.dart';
 import '../../providers/repeat_suggestion_provider.dart';
 import '../../providers/transaction_provider.dart';
-import '../../services/backup_service.dart';
 
 /// After the database changed (restore, delete all, demo data), every
 /// provider reads it again. History and Reports follow TransactionProvider
@@ -33,16 +33,15 @@ Future<void> reloadAllData(BuildContext context) async {
 
 /// Settings rows: Backup, Restore and Delete all data.
 class DataSection extends StatefulWidget {
-  const DataSection({super.key, this.backupService});
-
-  final BackupService? backupService;
+  const DataSection({super.key});
 
   @override
   State<DataSection> createState() => _DataSectionState();
 }
 
 class _DataSectionState extends State<DataSection> {
-  late final BackupService _backup = widget.backupService ?? BackupService();
+  // `context.read` gets the provider once, without rebuilding on changes.
+  DataProvider get _data => context.read<DataProvider>();
   bool _busy = false;
 
   /// Runs [job] with a spinner and shows [done] or the error in a SnackBar.
@@ -66,9 +65,10 @@ class _DataSectionState extends State<DataSection> {
   }
 
   // The DB is closed for the copy; the next query opens it again by itself.
-  Future<void> _onBackup() => _run(_backup.backupAndShare, '');
+  Future<void> _onBackup() => _run(_data.backupAndShare, '');
 
   Future<void> _onRestore() async {
+    final data = _data; // read before any await
     final file = await FilePicker.pickFile(dialogTitle: 'Pick a backup file');
     if (file == null || !mounted) return; // user cancelled
     final ok = await _confirm(
@@ -81,12 +81,13 @@ class _DataSectionState extends State<DataSection> {
     if (!ok) return;
     await _run(() async {
       final bytes = await file.xFile.readAsBytes();
-      await _backup.restoreFromBytes(bytes);
+      await data.restoreFromBytes(bytes);
       if (mounted) await reloadAllData(context);
     }, 'Backup restored');
   }
 
   Future<void> _onDeleteAll() async {
+    final data = _data;
     final ok = await _confirm(
       title: 'Delete all data?',
       message:
@@ -98,7 +99,7 @@ class _DataSectionState extends State<DataSection> {
     );
     if (!ok) return;
     await _run(() async {
-      await _backup.deleteAllData();
+      await data.deleteAllData();
       if (mounted) await reloadAllData(context);
     }, 'All data deleted');
   }

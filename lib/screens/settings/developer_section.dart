@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../providers/data_provider.dart';
 import '../../providers/detected_sms_provider.dart';
 import '../../providers/recurring_provider.dart';
 import '../../services/cash_reminder_service.dart';
-import '../../services/demo_data_service.dart';
 import '../../services/reminder_service.dart';
 import 'data_section.dart';
 import 'test_sms_screen.dart';
@@ -23,6 +23,7 @@ class _DeveloperSectionState extends State<DeveloperSection> {
   bool _busy = false;
 
   Future<void> _loadDemo() async {
+    final data = context.read<DataProvider>(); // read before any await
     final scheme = Theme.of(context).colorScheme;
     final ok = await showDialog<bool>(
       context: context,
@@ -55,7 +56,7 @@ class _DeveloperSectionState extends State<DeveloperSection> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _busy = true);
     try {
-      final n = await DemoDataService().replaceWithDemoData();
+      final n = await data.loadDemoData();
       if (mounted) await reloadAllData(context);
       messenger.showSnackBar(
         SnackBar(content: Text('Loaded $n demo transactions')),

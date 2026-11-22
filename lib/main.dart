@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'providers/app_lock_provider.dart';
 import 'providers/budget_provider.dart';
 import 'providers/dashboard_provider.dart';
+import 'providers/data_provider.dart';
 import 'providers/detected_sms_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/own_accounts_provider.dart';
@@ -133,6 +134,7 @@ class ExpenseTrackerApp extends StatelessWidget {
     //   schedules the reminders. `lazy: false` creates it at start-up
     //   (providers are normally created only when a screen first reads them).
     // RepeatSuggestionProvider: "Make it a repeat payment?" cards on Home.
+    // DataProvider: Settings → Backup, Restore, Delete all data, demo data.
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: settings),
@@ -171,6 +173,7 @@ class ExpenseTrackerApp extends StatelessWidget {
             context.read<RecurringProvider>(),
           ),
         ),
+        ChangeNotifierProvider(create: (_) => DataProvider()),
       ],
       // Consumer rebuilds only the MaterialApp when the theme setting changes.
       child: Consumer<SettingsProvider>(

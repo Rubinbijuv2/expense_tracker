@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/recurring_payment.dart';
@@ -9,6 +8,7 @@ import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
 import '../../utils/validators.dart';
 import '../add_edit/category_grid.dart';
+import '../add_edit/form_parts.dart';
 import '../add_edit/payment_mode_chips.dart';
 import 'form_fields.dart';
 import 'type_fields.dart';
@@ -147,11 +147,6 @@ class _RecurringFormScreenState extends State<RecurringFormScreen> {
     });
   }
 
-  String? _text(TextEditingController c) {
-    final t = c.text.trim();
-    return t.isEmpty ? null : t;
-  }
-
   Future<void> _save() async {
     final ok = _formKey.currentState!.validate();
     setState(() => _categoryError = validateCategory(_categoryId));
@@ -178,12 +173,12 @@ class _RecurringFormScreenState extends State<RecurringFormScreen> {
       totalInstallments: _monthlyOnly ? int.parse(_total.text.trim()) : null,
       remindDaysBefore: _remind,
       paymentMode: _mode,
-      matchKeyword: _text(_keyword),
-      organiserName: chitti ? _text(_organiser) : null,
-      organiserPhone: chitti ? _text(_phone)?.replaceAll(' ', '') : null,
+      matchKeyword: textOrNull(_keyword),
+      organiserName: chitti ? textOrNull(_organiser) : null,
+      organiserPhone: chitti ? textOrNull(_phone)?.replaceAll(' ', '') : null,
       chittiReceivedPaise: chitti ? old?.chittiReceivedPaise : null,
       chittiReceivedDate: chitti ? old?.chittiReceivedDate : null,
-      notes: _text(_notes),
+      notes: textOrNull(_notes),
       active: _active,
       createdAt: old?.createdAt,
     );
@@ -206,7 +201,6 @@ class _RecurringFormScreenState extends State<RecurringFormScreen> {
     final theme = Theme.of(context);
     final txns = context.watch<TransactionProvider>();
     const gap = SizedBox(height: 16);
-    const border = OutlineInputBorder();
 
     return Scaffold(
       appBar: AppBar(
@@ -221,44 +215,14 @@ class _RecurringFormScreenState extends State<RecurringFormScreen> {
             const SizedBox(height: 8),
             TypeSelector(selected: _type, onSelected: _changeType),
             gap,
-            TextFormField(
-              controller: _name,
-              maxLength: 40,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                labelText: 'Name',
-                hintText: switch (_type) {
-                  'emi' => 'e.g. Bike EMI',
-                  'chitti' => 'e.g. KSFE chitti',
-                  'fee' => 'e.g. Tuition fee',
-                  _ => 'e.g. Netflix, Electricity',
-                },
-                border: border,
-              ),
-              validator: (v) =>
-                  (v ?? '').trim().isEmpty ? 'Enter a name' : null,
-            ),
+            NameField(controller: _name, type: _type),
             const SizedBox(height: 8),
-            TextFormField(
+            AmountField(
               controller: _amount,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                LengthLimitingTextInputFormatter(16),
-              ],
-              decoration: InputDecoration(
-                labelText: _type == 'chitti'
-                    ? 'Usual monthly amount'
-                    : 'Amount',
-                helperText: _type == 'chitti'
-                    ? 'You can change it each month when paying'
-                    : null,
-                prefixText: '₹ ',
-                border: border,
-              ),
-              validator: validateAmount,
+              label: _type == 'chitti' ? 'Usual monthly amount' : 'Amount',
+              helperText: _type == 'chitti'
+                  ? 'You can change it each month when paying'
+                  : null,
             ),
             ExtraTypeFields(
               type: _type,
@@ -293,16 +257,7 @@ class _RecurringFormScreenState extends State<RecurringFormScreen> {
                 _categoryError = null;
               }),
             ),
-            if (_categoryError != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 6, left: 12),
-                child: Text(
-                  _categoryError!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
+            CategoryErrorText(error: _categoryError),
             gap,
             Text('Payment mode', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),

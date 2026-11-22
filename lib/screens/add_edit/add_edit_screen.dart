@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/detected_sms.dart';
@@ -188,24 +187,8 @@ class _AddEditScreenState extends State<AddEditScreen> {
       RefundMatcher.isRefundCategory(p.categoryById(_categoryId!));
 
   Future<void> _delete() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete transaction?'),
-        content: const Text('You can undo this for a few seconds.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !mounted) return;
+    final ok = await confirmDeleteTransaction(context);
+    if (!ok || !mounted) return;
     final provider = context.read<TransactionProvider>();
     // Start the delete (it shows the Undo snackbar), then close this screen.
     deleteWithUndo(context, provider, widget.existing!);
@@ -240,24 +223,10 @@ class _AddEditScreenState extends State<AddEditScreen> {
           children: [
             TypeToggle(type: _type, onChanged: _changeType),
             const SizedBox(height: 16),
-            TextFormField(
+            AmountField(
               controller: _amountCtrl,
               autofocus: !_isEdit,
-              // Number keyboard with a decimal point.
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                LengthLimitingTextInputFormatter(16),
-              ],
               style: theme.textTheme.headlineSmall,
-              decoration: const InputDecoration(
-                labelText: 'Amount',
-                prefixText: '₹ ',
-                border: OutlineInputBorder(),
-              ),
-              validator: validateAmount,
             ),
             const SizedBox(height: 20),
             Text('Category', style: theme.textTheme.titleSmall),
@@ -270,16 +239,7 @@ class _AddEditScreenState extends State<AddEditScreen> {
                 _categoryError = null;
               }),
             ),
-            if (_categoryError != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 6, left: 12),
-                child: Text(
-                  _categoryError!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
+            CategoryErrorText(error: _categoryError),
             const SizedBox(height: 20),
             Text('Payment mode', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),

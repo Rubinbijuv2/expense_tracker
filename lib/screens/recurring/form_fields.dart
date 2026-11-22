@@ -3,6 +3,12 @@ import 'package:flutter/services.dart';
 
 const _border = OutlineInputBorder();
 
+/// The trimmed text of [c], or null when it is empty.
+String? textOrNull(TextEditingController c) {
+  final t = c.text.trim();
+  return t.isEmpty ? null : t;
+}
+
 /// EMI / chitti: total months. Chitti: organiser name and phone.
 /// Shows nothing for bills and fees.
 class ExtraTypeFields extends StatelessWidget {
@@ -144,6 +150,34 @@ class ReminderFields extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Repeat payment name, with an example that fits the chosen [type].
+class NameField extends StatelessWidget {
+  const NameField({super.key, required this.controller, required this.type});
+
+  final TextEditingController controller;
+  final String type;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      maxLength: 40,
+      textCapitalization: TextCapitalization.words,
+      decoration: InputDecoration(
+        labelText: 'Name',
+        hintText: switch (type) {
+          'emi' => 'e.g. Bike EMI',
+          'chitti' => 'e.g. KSFE chitti',
+          'fee' => 'e.g. Tuition fee',
+          _ => 'e.g. Netflix, Electricity',
+        },
+        border: _border,
+      ),
+      validator: (v) => (v ?? '').trim().isEmpty ? 'Enter a name' : null,
     );
   }
 }
