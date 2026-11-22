@@ -56,8 +56,11 @@ class _DataSectionState extends State<DataSection> {
     } on InvalidBackupException catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
+      debugPrint('Data job failed: $e');
       messenger.showSnackBar(
-        SnackBar(content: Text('Something went wrong: $e')),
+        const SnackBar(
+          content: Text('Something went wrong. Please try again.'),
+        ),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -75,7 +78,7 @@ class _DataSectionState extends State<DataSection> {
       title: 'Restore this backup?',
       message:
           'All data now in the app will be replaced by "${file.name}". '
-          'Your PIN and name stay the same.',
+          'Your PIN and settings stay the same.',
       action: 'Restore',
     );
     if (!ok) return;
@@ -93,7 +96,7 @@ class _DataSectionState extends State<DataSection> {
       message:
           'Every transaction, budget, detected SMS, custom category and '
           'learned merchant rule will be deleted. This cannot be undone.\n\n'
-          'Tip: make a backup first. Your PIN and name stay the same.',
+          'Tip: make a backup first. Your PIN and settings stay the same.',
       action: 'Delete everything',
       danger: true,
     );

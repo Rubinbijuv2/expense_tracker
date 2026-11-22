@@ -46,7 +46,7 @@ class _DetectedSmsStripState extends State<DetectedSmsStrip> {
         child: ListTile(
           leading: Icon(Icons.mark_email_read_outlined),
           title: Text('Detected SMS'),
-          subtitle: Text('No new bank SMS to review.'),
+          subtitle: Text('No new payments to review.'),
         ),
       );
     }

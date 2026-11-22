@@ -53,7 +53,8 @@ class DetectedSmsScreen extends StatelessWidget {
                           icon: Icons.mark_email_read_outlined,
                           title: 'All caught up',
                           message:
-                              'New bank SMS will appear here as suggestions.',
+                              'Payments found in bank SMS and payment app '
+                              'notifications will appear here.',
                         ),
                       ],
                     )

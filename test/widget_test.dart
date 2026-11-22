@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:expense_tracker/data/db_helper.dart';
 import 'package:expense_tracker/main.dart';
 import 'package:expense_tracker/providers/app_lock_provider.dart';
 import 'package:expense_tracker/providers/settings_provider.dart';
@@ -9,6 +10,13 @@ import 'package:expense_tracker/screens/lock/lock_screen.dart';
 import 'package:expense_tracker/screens/onboarding/onboarding_screen.dart';
 
 void main() {
+  // Screens load data from a real (empty) test database, set up in
+  // flutter_test_config.dart. Opening the file needs real disk access, which
+  // never finishes inside testWidgets' fake clock, so it is opened once here.
+  // After that, every query works inside the widget tests.
+  setUpAll(() => DbHelper.instance.database);
+  tearDownAll(() => DbHelper.instance.close());
+
   testWidgets('Bottom navigation shows 4 tabs and switches screens', (
     WidgetTester tester,
   ) async {

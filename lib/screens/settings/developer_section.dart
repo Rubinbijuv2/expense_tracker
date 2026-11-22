@@ -31,9 +31,11 @@ class _DeveloperSectionState extends State<DeveloperSection> {
         icon: const Icon(Icons.warning_amber),
         title: const Text('Replace all data with demo data?'),
         content: const Text(
-          'Every transaction, budget, detected SMS, custom category and '
-          'merchant rule will be deleted, then about 3 months of sample '
-          'data will be added.\n\nYour PIN and name stay the same.',
+          'Every transaction, budget, detected SMS, repeat payment, custom '
+          'category and merchant rule will be deleted. Then about 3 months '
+          'of sample data will be added: transactions, budgets, an EMI, a '
+          'chitti, a class fee, detected SMS and payment app '
+          'notifications.\n\nYour PIN and settings stay the same.',
         ),
         actions: [
           TextButton(
@@ -171,7 +173,7 @@ class _DeveloperSectionState extends State<DeveloperSection> {
           enabled: !_busy,
           leading: const Icon(Icons.payments_outlined),
           title: const Text('Show cash reminder now'),
-          subtitle: const Text('Tap it to open Add with mode = Cash'),
+          subtitle: const Text('Tapping it opens Add with Cash selected'),
           onTap: _testCashReminder,
         ),
       ],

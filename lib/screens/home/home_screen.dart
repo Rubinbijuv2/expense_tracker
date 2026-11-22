@@ -109,7 +109,7 @@ class HomeScreen extends StatelessWidget {
           if (s.recent.isEmpty)
             _EmptyRecent(
               message: txns.transactions.isEmpty
-                  ? 'No expenses yet — tap + to add one'
+                  ? 'No transactions yet. Tap + to add one.'
                   : 'Nothing added in ${DateFormat('MMMM').format(dash.month)}',
             )
           else

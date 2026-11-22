@@ -18,7 +18,8 @@ class CategoriesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final all = context.watch<TransactionProvider>().allCategories;
+    final provider = context.watch<TransactionProvider>();
+    final all = provider.allCategories;
     final expense = all.where((c) => !c.isIncome).toList();
     final income = all.where((c) => c.isIncome).toList();
 
@@ -30,15 +31,19 @@ class CategoriesScreen extends StatelessWidget {
         icon: const Icon(Icons.add),
         label: const Text('Add category'),
       ),
-      body: CustomScrollView(
-        slivers: [
-          _header(context, 'Expense'),
-          _grid(expense),
-          _header(context, 'Income'),
-          _grid(income),
-          const SliverToBoxAdapter(child: SizedBox(height: 88)), // FAB space
-        ],
-      ),
+      // Categories load with the transactions; show a spinner until then.
+      body: all.isEmpty && provider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : CustomScrollView(
+              slivers: [
+                _header(context, 'Expense'),
+                _grid(expense),
+                _header(context, 'Income'),
+                _grid(income),
+                // Room for the + button.
+                const SliverToBoxAdapter(child: SizedBox(height: 88)),
+              ],
+            ),
     );
   }
 

@@ -7,6 +7,7 @@ import '../../providers/recurring_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../services/dialer_service.dart';
 import '../../services/installment_schedule.dart';
+import '../../widgets/placeholder_body.dart';
 import 'amount_dialog.dart';
 import 'installment_tile.dart';
 import 'recurring_form_screen.dart';
@@ -32,7 +33,13 @@ class RecurringDetailScreen extends StatelessWidget {
       // Deleted (or the data was reset) while this screen was open.
       return Scaffold(
         appBar: AppBar(),
-        body: const Center(child: Text('Not found')),
+        body: rec.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : const PlaceholderBody(
+                icon: Icons.event_busy,
+                title: 'Repeat payment not found',
+                message: 'It may have been deleted. Go back to see the list.',
+              ),
       );
     }
     final insts = rec.installmentsOf(id);

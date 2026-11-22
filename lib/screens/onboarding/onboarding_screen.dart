@@ -81,10 +81,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       // This swaps onboarding for the main app (see AppGate in main.dart).
       await settings.completeOnboarding();
     } catch (e) {
+      debugPrint('Onboarding save failed: $e');
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Could not save: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save. Please try again.')),
+      );
     }
   }
 

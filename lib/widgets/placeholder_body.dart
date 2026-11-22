@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Centered icon + text, used by screens that are not built yet.
+/// Centered icon + title + message for empty, error and "not found" states.
 class PlaceholderBody extends StatelessWidget {
   const PlaceholderBody({
     super.key,
