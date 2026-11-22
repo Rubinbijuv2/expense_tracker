@@ -78,17 +78,14 @@ class NotificationService {
   /// "₹450 paid to Swiggy — tap to add", with **Save** and **Ignore**
   /// buttons (rule 14). Self transfers get no notification (they are not
   /// spending). A Bank + Receipt pair asks the user to open the app instead,
-  /// because only the Detected SMS screen can merge them.
-  Future<void> showDetected(DetectedSms sms) async {
+  /// because only the Detected SMS screen can merge them. [partner] is the
+  /// other half of the pair (used for the title).
+  Future<void> showDetected(DetectedSms sms, {DetectedSms? partner}) async {
     if (sms.isSelfTransfer || sms.id == null) return;
     final paired = sms.duplicateOf != null;
     await _safeShow(
       _smsIdOffset + sms.id!,
-      paired
-          ? (sms.isNotification
-                ? 'Found in ${sms.sourceApp} and bank SMS'
-                : 'Looks like the same payment')
-          : 'New ${sms.type} detected',
+      paired ? pairedTitle(sms, partner) : 'New ${sms.type} detected',
       paired ? pairedText(sms) : detectedText(sms),
       payload: '${sms.id}',
       actions: paired
@@ -200,6 +197,18 @@ class NotificationService {
     return sms.type == 'income'
         ? '$amount received from $merchant — tap to add'
         : '$amount paid to $merchant — tap to add';
+  }
+
+  /// Title for a Bank + Receipt pair, the same as the merge card: if either
+  /// side is a payment app notification (whichever arrived first),
+  /// "Found in Google Pay and bank SMS"; otherwise "Looks like the same payment".
+  static String pairedTitle(DetectedSms sms, DetectedSms? partner) {
+    final app = sms.isNotification
+        ? sms
+        : (partner != null && partner.isNotification ? partner : null);
+    return app == null
+        ? 'Looks like the same payment'
+        : 'Found in ${app.sourceApp ?? app.sender} and bank SMS';
   }
 
   /// "₹450 to Swiggy — matches another SMS. Tap to merge"

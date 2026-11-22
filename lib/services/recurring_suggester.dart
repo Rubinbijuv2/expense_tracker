@@ -27,6 +27,9 @@ class RepeatSuggestion {
 class RecurringSuggester {
   RecurringSuggester._();
 
+  /// shared_preferences key for the "Not now" merchants.
+  static const String dismissedKey = 'dismissed_repeat_suggestions';
+
   static const int months = 3;
   static const int percent = 5;
 

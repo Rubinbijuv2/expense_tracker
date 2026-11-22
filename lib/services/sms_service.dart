@@ -74,7 +74,9 @@ class SmsService {
   static const int scanDays = 30;
   static const Duration duplicateWindow = Duration(minutes: 2);
   static const Duration pairWindow = Duration(minutes: 30);
-  static const String _scanDoneKey = 'sms_inbox_scan_done';
+
+  /// Set after the first 30-day inbox scan. "Delete all data" removes it.
+  static const String scanDoneKey = 'sms_inbox_scan_done';
 
   // A getter, so tests that never touch the phone don't create it.
   Telephony get _telephony => Telephony.instance;
@@ -137,17 +139,26 @@ class SmsService {
   ) async {
     final result = await processMessage(sender, body, receivedAt);
     if (result.saved != null) {
-      await NotificationService.instance.showDetected(result.saved!);
+      await NotificationService.instance.showDetected(
+        result.saved!,
+        partner: await partnerOf(result.saved!),
+      );
     }
     return result;
   }
+
+  /// The other half of a Bank + Receipt pair, or null if [sms] is not paired.
+  /// The notification needs it to say "Found in Google Pay and bank SMS"
+  /// when the app notification arrived first.
+  Future<DetectedSms?> partnerOf(DetectedSms sms) async =>
+      sms.duplicateOf == null ? null : _smsRepo.getById(sms.duplicateOf!);
 
   /// Reads the last [scanDays] days of the inbox, only the first time it is
   /// called (remembered in shared_preferences). Returns how many new pending
   /// suggestions were created.
   Future<int> scanInboxOnce() async {
     final prefs = await SharedPreferences.getInstance();
-    if (prefs.getBool(_scanDoneKey) ?? false) return 0;
+    if (prefs.getBool(scanDoneKey) ?? false) return 0;
 
     final since = DateTime.now().subtract(const Duration(days: scanDays));
     final messages = await _telephony.getInboxSms(
@@ -163,7 +174,7 @@ class SmsService {
       final result = await processMessage(m.address, m.body, dateOf(m));
       if (result.isSaved) created++;
     }
-    await prefs.setBool(_scanDoneKey, true);
+    await prefs.setBool(scanDoneKey, true);
     debugPrint('Inbox scan: ${messages.length} SMS checked, $created new');
     return created;
   }
@@ -273,10 +284,11 @@ class SmsService {
     final partner = await _smsRepo.findPairPartner(
       parsed.amountPaise,
       other,
+      parsed.type,
       at,
       window: pairWindow,
     );
-    return partner?.type == parsed.type ? partner?.id : null;
+    return partner?.id;
   }
 
   /// Rule 10, plus a safety net: the guessed category must match the type.

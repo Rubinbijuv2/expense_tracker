@@ -75,19 +75,30 @@ class FakeSmsRepo extends DetectedSmsRepo {
   Future<DetectedSms?> findPairPartner(
     int amountPaise,
     String otherKind,
+    String type,
     DateTime at, {
     Duration window = const Duration(minutes: 30),
-  }) async => rows
-      .where(
-        (r) =>
-            r.isPending &&
-            r.kind == otherKind &&
-            r.amountPaise == amountPaise &&
-            r.duplicateOf == null &&
-            !r.isSelfTransfer &&
-            r.receivedAt.difference(at).abs() <= window,
-      )
-      .firstOrNull;
+  }) async =>
+      (rows
+              .where(
+                (r) =>
+                    r.isPending &&
+                    r.kind == otherKind &&
+                    r.type == type &&
+                    r.amountPaise == amountPaise &&
+                    r.duplicateOf == null &&
+                    !r.isSelfTransfer &&
+                    r.receivedAt.difference(at).abs() <= window,
+              )
+              .toList()
+            // Like the real query: the closest in time first.
+            ..sort(
+              (a, b) => a.receivedAt
+                  .difference(at)
+                  .abs()
+                  .compareTo(b.receivedAt.difference(at).abs()),
+            ))
+          .firstOrNull;
 
   @override
   Future<bool> existsSimilarPending(
@@ -601,6 +612,33 @@ void main() {
       final sms = await process('AX-HDFCBK-S', ownTransfer, now);
       await actions.handle(SmsActionService.saveAction, sms!.id!);
       expect(txnRepo.inserted.single.isSelfTransfer, isTrue);
+    });
+
+    test('paired title: two SMS → "Looks like the same payment"', () {
+      final bank = DetectedSms(
+        sender: 'JD-SBIUPI-S',
+        body: 'x',
+        amountPaise: 12000,
+        type: 'expense',
+        receivedAt: now,
+        kind: 'bank',
+      );
+      final receipt = DetectedSms(
+        sender: 'AD-VAAHAN-S',
+        body: 'y',
+        amountPaise: 12000,
+        type: 'expense',
+        receivedAt: now,
+        kind: 'receipt',
+      );
+      expect(
+        NotificationService.pairedTitle(bank, receipt),
+        'Looks like the same payment',
+      );
+      expect(
+        NotificationService.pairedTitle(bank, null),
+        'Looks like the same payment',
+      );
     });
 
     test('paired notification text', () {

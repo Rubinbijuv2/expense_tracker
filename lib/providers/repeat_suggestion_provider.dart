@@ -12,14 +12,14 @@ class RepeatSuggestionProvider extends ChangeNotifier {
     // Recompute whenever transactions or repeat payments change.
     _txns.addListener(notifyListeners);
     _recurring.addListener(notifyListeners);
-    _loadDismissed();
+    loadDismissed();
   }
 
   final TransactionProvider _txns;
   final RecurringProvider _recurring;
   Set<String> _dismissed = {};
 
-  static const String _key = 'dismissed_repeat_suggestions';
+  static const String _key = RecurringSuggester.dismissedKey;
 
   List<RepeatSuggestion> get suggestions {
     if (_txns.isLoading || _recurring.isLoading) return const [];
@@ -31,7 +31,8 @@ class RepeatSuggestionProvider extends ChangeNotifier {
     );
   }
 
-  Future<void> _loadDismissed() async {
+  /// Reads the "Not now" list again (also after "Delete all data").
+  Future<void> loadDismissed() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       _dismissed = (prefs.getStringList(_key) ?? const []).toSet();

@@ -1,5 +1,6 @@
 import 'package:expense_tracker/models/detected_sms.dart';
 import 'package:expense_tracker/providers/detected_sms_provider.dart';
+import 'package:expense_tracker/services/notification_service.dart';
 import 'package:expense_tracker/services/payment_notification_service.dart';
 import 'package:expense_tracker/services/sms_recheck.dart';
 import 'package:expense_tracker/services/sms_service.dart';
@@ -185,6 +186,62 @@ void main() {
     )).saved!;
     expect(sms.duplicateOf, app.id);
   });
+
+  test('app first, bank SMS second: title still names the app', () async {
+    final app = (await service.process(
+      n('Paid ₹450 to Swiggy', 'Payment successful', now),
+    )).saved!;
+    final sms = (await smsService.processMessage(
+      swiggySender,
+      swiggyBody,
+      now.add(const Duration(minutes: 10)),
+    )).saved!;
+    final partner = await smsService.partnerOf(sms);
+    expect(partner!.id, app.id);
+    expect(
+      NotificationService.pairedTitle(sms, partner),
+      'Found in ${app.sourceApp} and bank SMS',
+    );
+    // Bank SMS first, app second (the case that already worked).
+    expect(
+      NotificationService.pairedTitle(app, sms),
+      'Found in ${app.sourceApp} and bank SMS',
+    );
+    expect(
+      await smsService.partnerOf(app.copyWith(clearDuplicateOf: true)),
+      isNull,
+    );
+  });
+
+  test(
+    'a closer match of the wrong type does not hide the right one',
+    () async {
+      // Expense notification 20 minutes before, income notification 1 minute
+      // before: the income one is closer but must be skipped.
+      final expense = (await service.process(
+        n(
+          'Paid ₹450 to Swiggy',
+          'Payment successful',
+          now.subtract(const Duration(minutes: 20)),
+        ),
+      )).saved!;
+      final income = (await service.process(
+        n('Rahul paid you ₹450', '', now.subtract(const Duration(minutes: 1))),
+      )).saved!;
+      expect(income.type, 'income');
+
+      final sms = (await smsService.processMessage(
+        swiggySender,
+        swiggyBody,
+        now,
+      )).saved!;
+      expect(sms.duplicateOf, expense.id);
+      expect(
+        smsRepo.rows.firstWhere((r) => r.id == income.id).duplicateOf,
+        isNull,
+      );
+    },
+  );
 
   test('income notification does not pair with an expense SMS', () async {
     await smsService.processMessage(swiggySender, swiggyBody, now);

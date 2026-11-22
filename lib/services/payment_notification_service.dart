@@ -141,7 +141,10 @@ class PaymentNotificationService {
   Future<SmsResult> handleIncoming(AppNotification n) async {
     final result = await process(n);
     if (result.saved != null) {
-      await NotificationService.instance.showDetected(result.saved!);
+      await NotificationService.instance.showDetected(
+        result.saved!,
+        partner: await _sms.partnerOf(result.saved!),
+      );
     }
     return result;
   }

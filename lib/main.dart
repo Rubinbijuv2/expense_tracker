@@ -18,6 +18,7 @@ import 'screens/detected/detected_sms_screen.dart';
 import 'screens/lock/lock_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/recurring/reminder_actions.dart';
+import 'services/backup_service.dart';
 import 'services/cash_reminder_service.dart';
 import 'services/notification_service.dart';
 import 'services/payment_notification_service.dart';
@@ -50,6 +51,10 @@ Future<void> main() async {
   // so a changed time zone or a cleared alarm is fixed. Not awaited, so it
   // never slows down opening the app.
   settings.applyCashReminder();
+
+  // Remove backup copies a previous share left in the cache (they hold
+  // all data). Not awaited either; it never throws.
+  BackupService.clearOldBackups();
 
   // App was closed and the user tapped one of our notifications
   // ("₹450 paid to Swiggy — tap to add", a repeat-payment reminder or the

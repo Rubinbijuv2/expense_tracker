@@ -109,11 +109,13 @@ class DetectedSmsRepo {
   }
 
   /// Rule 12: a pending, not-yet-paired SMS of kind [otherKind] ('bank' or
-  /// 'receipt') with the same amount within [window] of [at]. The closest
-  /// in time wins.
+  /// 'receipt') with the same amount and [type] ('expense' or 'income')
+  /// within [window] of [at]. The closest in time wins. The type is part of
+  /// the query, so a closer SMS of the wrong type never hides a good match.
   Future<DetectedSms?> findPairPartner(
     int amountPaise,
     String otherKind,
+    String type,
     DateTime at, {
     Duration window = const Duration(minutes: 30),
   }) async {
@@ -121,11 +123,13 @@ class DetectedSmsRepo {
     final rows = await db.query(
       _table,
       where:
-          'status = ? AND kind = ? AND amount_paise = ? AND duplicate_of IS NULL '
-          'AND is_self_transfer = 0 AND received_at >= ? AND received_at <= ?',
+          'status = ? AND kind = ? AND type = ? AND amount_paise = ? '
+          'AND duplicate_of IS NULL AND is_self_transfer = 0 '
+          'AND received_at >= ? AND received_at <= ?',
       whereArgs: [
         'pending',
         otherKind,
+        type,
         amountPaise,
         at.subtract(window).toIso8601String(),
         at.add(window).toIso8601String(),

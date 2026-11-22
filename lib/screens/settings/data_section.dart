@@ -7,6 +7,7 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/detected_sms_provider.dart';
 import '../../providers/own_accounts_provider.dart';
 import '../../providers/recurring_provider.dart';
+import '../../providers/repeat_suggestion_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../services/backup_service.dart';
 
@@ -20,12 +21,14 @@ Future<void> reloadAllData(BuildContext context) async {
   final dash = context.read<DashboardProvider>();
   final own = context.read<OwnAccountsProvider>();
   final recurring = context.read<RecurringProvider>();
+  final suggestions = context.read<RepeatSuggestionProvider>();
   await txns.load();
   await detected.load();
   await budgets.load();
   await dash.loadBudget();
   await own.load();
   await recurring.load();
+  await suggestions.loadDismissed();
 }
 
 /// Settings rows: Backup, Restore and Delete all data.
