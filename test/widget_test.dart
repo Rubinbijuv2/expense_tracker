@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:expense_tracker/main.dart';
 import 'package:expense_tracker/providers/app_lock_provider.dart';
 import 'package:expense_tracker/providers/settings_provider.dart';
+import 'package:expense_tracker/screens/home/budget_bar_card.dart';
 import 'package:expense_tracker/screens/lock/lock_screen.dart';
 import 'package:expense_tracker/screens/onboarding/onboarding_screen.dart';
 
@@ -54,11 +55,32 @@ void main() {
   testWidgets('With a PIN, the app starts locked', (WidgetTester tester) async {
     await tester.pumpWidget(
       ExpenseTrackerApp(
-        settings: SettingsProvider(onboardingDone: true, name: 'Asha'),
+        settings: SettingsProvider(onboardingDone: true),
         lock: AppLockProvider(pinSet: true, fingerprintEnabled: false),
       ),
     );
     expect(find.byType(LockScreen), findsOneWidget);
-    expect(find.text('Welcome back, Asha'), findsOneWidget);
+    // No name anywhere: the greeting is always plain.
+    expect(find.text('Welcome back'), findsOneWidget);
+    // An install that already finished onboarding never sees it again.
+    expect(find.byType(OnboardingScreen), findsNothing);
+  });
+
+  testWidgets('Home shows "Set a budget" when no budget is set', (
+    WidgetTester tester,
+  ) async {
+    // The card alone: the full Home needs the SQLite database.
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BudgetBarCard(
+            spentPaise: 50000,
+            limitPaise: null,
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Set a budget'), findsOneWidget);
   });
 }

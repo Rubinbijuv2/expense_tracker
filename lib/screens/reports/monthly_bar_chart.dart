@@ -17,8 +17,10 @@ class MonthlyBarChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final maxPaise =
-        months.fold<int>(0, (m, t) => t.spentPaise > m ? t.spentPaise : m);
+    final maxPaise = months.fold<int>(
+      0,
+      (m, t) => t.spentPaise > m ? t.spentPaise : m,
+    );
     // 20% headroom above the tallest bar; 1 so an all-zero chart still draws.
     final maxY = maxPaise == 0 ? 1.0 : maxPaise * 1.2;
 
@@ -28,7 +30,10 @@ class MonthlyBarChart extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Spending — last 6 months', style: theme.textTheme.titleMedium),
+            Text(
+              'Spending — last 6 months',
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: 16),
             SizedBox(
               height: 200,
@@ -42,8 +47,9 @@ class MonthlyBarChart extends StatelessWidget {
                     drawVerticalLine: false,
                     horizontalInterval: maxY / 4,
                     getDrawingHorizontalLine: (_) => FlLine(
-                        color: scheme.outlineVariant.withValues(alpha: 0.5),
-                        strokeWidth: 1),
+                      color: scheme.outlineVariant.withValues(alpha: 0.5),
+                      strokeWidth: 1,
+                    ),
                   ),
                   titlesData: FlTitlesData(
                     topTitles: const AxisTitles(),
@@ -55,8 +61,10 @@ class MonthlyBarChart extends StatelessWidget {
                         interval: maxY / 4,
                         getTitlesWidget: (value, meta) => SideTitleWidget(
                           meta: meta,
-                          child: Text(formatPaiseCompact(value.round()),
-                              style: theme.textTheme.labelSmall),
+                          child: Text(
+                            formatPaiseCompact(value.round()),
+                            style: theme.textTheme.labelSmall,
+                          ),
                         ),
                       ),
                     ),
@@ -71,8 +79,10 @@ class MonthlyBarChart extends StatelessWidget {
                           }
                           return SideTitleWidget(
                             meta: meta,
-                            child: Text(DateFormat('MMM').format(months[i].month),
-                                style: theme.textTheme.labelSmall),
+                            child: Text(
+                              DateFormat('MMM').format(months[i].month),
+                              style: theme.textTheme.labelSmall,
+                            ),
                           );
                         },
                       ),
@@ -83,25 +93,32 @@ class MonthlyBarChart extends StatelessWidget {
                       getTooltipColor: (_) => scheme.inverseSurface,
                       getTooltipItem: (group, groupIndex, rod, rodIndex) =>
                           BarTooltipItem(
-                        '${DateFormat('MMM yyyy').format(months[group.x].month)}\n'
-                        '${formatPaise(months[group.x].spentPaise)}',
-                        TextStyle(color: scheme.onInverseSurface, fontSize: 12),
-                      ),
+                            '${DateFormat('MMM yyyy').format(months[group.x].month)}\n'
+                            '${formatPaise(months[group.x].spentPaise)}',
+                            TextStyle(
+                              color: scheme.onInverseSurface,
+                              fontSize: 12,
+                            ),
+                          ),
                     ),
                   ),
                   barGroups: [
                     for (var i = 0; i < months.length; i++)
-                      BarChartGroupData(x: i, barRods: [
-                        BarChartRodData(
-                          toY: months[i].spentPaise.toDouble(),
-                          width: 22,
-                          color: i == months.length - 1
-                              ? scheme.primary
-                              : scheme.primary.withValues(alpha: 0.4),
-                          borderRadius:
-                              const BorderRadius.vertical(top: Radius.circular(4)),
-                        ),
-                      ]),
+                      BarChartGroupData(
+                        x: i,
+                        barRods: [
+                          BarChartRodData(
+                            toY: months[i].spentPaise.toDouble(),
+                            width: 22,
+                            color: i == months.length - 1
+                                ? scheme.primary
+                                : scheme.primary.withValues(alpha: 0.4),
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(4),
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),

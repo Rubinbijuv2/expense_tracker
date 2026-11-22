@@ -28,29 +28,33 @@ class SummaryCards extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Column(
         children: [
-          Row(children: [
-            _StatCard(
-              label: 'Spent',
-              icon: Icons.arrow_upward,
-              value: formatPaise(spentPaise),
-              color: scheme.error,
-            ),
-            _StatCard(
-              label: 'Income',
-              icon: Icons.arrow_downward,
-              value: formatPaise(incomePaise),
-              color: green,
-            ),
-          ]),
-          Row(children: [
-            _StatCard(
-              label: 'Balance',
-              icon: Icons.account_balance_wallet_outlined,
-              value: formatPaise(balancePaise),
-              color: balancePaise < 0 ? scheme.error : scheme.onSurface,
-            ),
-            _buildBudgetCard(context),
-          ]),
+          Row(
+            children: [
+              _StatCard(
+                label: 'Spent',
+                icon: Icons.arrow_upward,
+                value: formatPaise(spentPaise),
+                color: scheme.error,
+              ),
+              _StatCard(
+                label: 'Income',
+                icon: Icons.arrow_downward,
+                value: formatPaise(incomePaise),
+                color: green,
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              _StatCard(
+                label: 'Balance',
+                icon: Icons.account_balance_wallet_outlined,
+                value: formatPaise(balancePaise),
+                color: balancePaise < 0 ? scheme.error : scheme.onSurface,
+              ),
+              _buildBudgetCard(context),
+            ],
+          ),
         ],
       ),
     );
@@ -105,13 +109,22 @@ class _StatCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(children: [
-                Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
-                const SizedBox(width: 4),
-                Text(label,
+              Row(
+                children: [
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    label,
                     style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant)),
-              ]),
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 6),
               // FittedBox shrinks big amounts so they never overflow the card.
               FittedBox(
@@ -120,7 +133,9 @@ class _StatCard extends StatelessWidget {
                 child: Text(
                   value,
                   style: theme.textTheme.titleMedium?.copyWith(
-                      color: color, fontWeight: FontWeight.w600),
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],

@@ -29,9 +29,12 @@ class CategoryPieChart extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
-                  child: Text('No spending this month',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
+                  child: Text(
+                    'No spending this month',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ),
               )
             else ...[
@@ -60,9 +63,12 @@ class CategoryPieChart extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text('Total', style: theme.textTheme.labelSmall),
-                        Text(formatPaise(grandTotal),
-                            style: theme.textTheme.labelLarge
-                                ?.copyWith(fontWeight: FontWeight.w600)),
+                        Text(
+                          formatPaise(grandTotal),
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -97,14 +103,19 @@ class _LegendRow extends StatelessWidget {
           Icon(iconFor(total.icon), size: 18, color: color),
           const SizedBox(width: 8),
           Expanded(child: Text(total.name, style: theme.textTheme.bodyMedium)),
-          Text(formatPaise(total.totalPaise),
-              style: theme.textTheme.bodyMedium),
+          Text(
+            formatPaise(total.totalPaise),
+            style: theme.textTheme.bodyMedium,
+          ),
           SizedBox(
             width: 48,
-            child: Text('$percent%',
-                textAlign: TextAlign.right,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            child: Text(
+              '$percent%',
+              textAlign: TextAlign.right,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
         ],
       ),

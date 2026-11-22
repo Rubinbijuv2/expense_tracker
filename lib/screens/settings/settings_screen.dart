@@ -13,8 +13,9 @@ import 'change_pin_screen.dart';
 import 'data_section.dart';
 import 'developer_section.dart';
 import 'my_accounts_screen.dart';
+import 'payment_notifications_screen.dart';
 
-/// Profile, theme, PIN/fingerprint, categories, budgets, backup and reset.
+/// Theme, PIN/fingerprint, categories, budgets, backup and reset.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -71,35 +72,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _editName(SettingsProvider settings) async {
-    final controller = TextEditingController(text: settings.name);
-    final name = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Your name'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 30,
-          textCapitalization: TextCapitalization.words,
-          onSubmitted: (v) => Navigator.pop(ctx, v),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
-    if (name != null && name.trim().isNotEmpty) await settings.setName(name);
-  }
-
   Future<void> _changePin() async {
     final messenger = ScaffoldMessenger.of(context);
     final changed = await ChangePinScreen.open(context);
@@ -126,14 +98,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
-          const _Header('Profile'),
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text('Name'),
-            subtitle: Text(settings.name.isEmpty ? 'Not set' : settings.name),
-            trailing: const Icon(Icons.edit_outlined),
-            onTap: () => _editName(settings),
-          ),
           const _Header('Appearance'),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -205,6 +169,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: const Text('Your own accounts, to spot self transfers'),
             onTap: () => MyAccountsScreen.open(context),
           ),
+          const _Header('Detection'),
+          const PaymentNotificationsTile(),
           const _Header('Reminders'),
           const CashReminderSection(),
           const _Header('Data'),

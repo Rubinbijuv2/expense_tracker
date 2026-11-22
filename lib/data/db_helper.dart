@@ -16,7 +16,7 @@ class DbHelper {
 
   /// Raising this number makes sqflite call [_onUpgrade] once on every phone
   /// that still has the older database.
-  static const int dbVersion = 2;
+  static const int dbVersion = 3;
 
   // Table names, used by the repos so the spelling lives in one place.
   static const String tCategories = Tables.categories;
@@ -60,6 +60,7 @@ class DbHelper {
   /// sqflite runs this inside a transaction, so a failed upgrade changes nothing.
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) await DbSchema.migrateToV2(db);
+    if (oldVersion < 3) await DbSchema.migrateToV3(db);
   }
 
   /// "Delete all data": empties every table in one transaction and inserts

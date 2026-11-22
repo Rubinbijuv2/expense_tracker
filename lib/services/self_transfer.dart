@@ -33,11 +33,7 @@ class SelfTransfer {
   /// account by definition), so it is skipped once; any OTHER account number
   /// in the text that matches [ownLast4] is the counterparty → self transfer.
   /// The word "self" alone is also enough.
-  static bool detect(
-    String body,
-    String? accountLast4,
-    Set<String> ownLast4,
-  ) {
+  static bool detect(String body, String? accountLast4, Set<String> ownLast4) {
     if (_selfWord.hasMatch(body)) return true;
     if (ownLast4.isEmpty) return false;
 

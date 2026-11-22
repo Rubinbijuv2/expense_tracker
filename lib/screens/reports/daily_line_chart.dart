@@ -28,8 +28,7 @@ class DailyLineChart extends StatelessWidget {
     final scheme = theme.colorScheme;
     final days = dailyPaise.length;
     final shown = daysToShow.clamp(0, days);
-    final maxPaise =
-        dailyPaise.fold<int>(0, (m, p) => p > m ? p : m);
+    final maxPaise = dailyPaise.fold<int>(0, (m, p) => p > m ? p : m);
     final maxY = maxPaise == 0 ? 1.0 : maxPaise * 1.2;
 
     return Card(
@@ -44,9 +43,12 @@ class DailyLineChart extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 40),
                 child: Center(
-                  child: Text('No spending this month',
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: scheme.onSurfaceVariant)),
+                  child: Text(
+                    'No spending this month',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
                 ),
               )
             else
@@ -63,8 +65,9 @@ class DailyLineChart extends StatelessWidget {
                       drawVerticalLine: false,
                       horizontalInterval: maxY / 4,
                       getDrawingHorizontalLine: (_) => FlLine(
-                          color: scheme.outlineVariant.withValues(alpha: 0.5),
-                          strokeWidth: 1),
+                        color: scheme.outlineVariant.withValues(alpha: 0.5),
+                        strokeWidth: 1,
+                      ),
                     ),
                     titlesData: FlTitlesData(
                       topTitles: const AxisTitles(),
@@ -76,8 +79,10 @@ class DailyLineChart extends StatelessWidget {
                           interval: maxY / 4,
                           getTitlesWidget: (value, meta) => SideTitleWidget(
                             meta: meta,
-                            child: Text(formatPaiseCompact(value.round()),
-                                style: theme.textTheme.labelSmall),
+                            child: Text(
+                              formatPaiseCompact(value.round()),
+                              style: theme.textTheme.labelSmall,
+                            ),
                           ),
                         ),
                       ),
@@ -89,14 +94,17 @@ class DailyLineChart extends StatelessWidget {
                           getTitlesWidget: (value, meta) {
                             final day = value.toInt();
                             // Label day 1, every 5th day, and the last day.
-                            final show = day == 1 ||
+                            final show =
+                                day == 1 ||
                                 (day % 5 == 0 && days - day >= 3) ||
                                 day == days;
                             if (!show) return const SizedBox.shrink();
                             return SideTitleWidget(
                               meta: meta,
-                              child: Text('$day',
-                                  style: theme.textTheme.labelSmall),
+                              child: Text(
+                                '$day',
+                                style: theme.textTheme.labelSmall,
+                              ),
                             );
                           },
                         ),
@@ -111,7 +119,9 @@ class DailyLineChart extends StatelessWidget {
                               '${DateFormat('d MMM').format(DateTime(month.year, month.month, s.x.toInt()))}\n'
                               '${formatPaise(dailyPaise[s.x.toInt() - 1])}',
                               TextStyle(
-                                  color: scheme.onInverseSurface, fontSize: 12),
+                                color: scheme.onInverseSurface,
+                                fontSize: 12,
+                              ),
                             ),
                         ],
                       ),
@@ -130,9 +140,10 @@ class DailyLineChart extends StatelessWidget {
                           checkToShowDot: (spot, _) => spot.y > 0,
                           getDotPainter: (spot, percent, bar, index) =>
                               FlDotCirclePainter(
-                                  radius: 3,
-                                  color: scheme.primary,
-                                  strokeWidth: 0),
+                                radius: 3,
+                                color: scheme.primary,
+                                strokeWidth: 0,
+                              ),
                         ),
                         belowBarData: BarAreaData(
                           show: true,

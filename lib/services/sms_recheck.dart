@@ -34,19 +34,28 @@ class SmsRecheck {
   /// no longer stored; the others are updated in place (amount, type, kind,
   /// merchant, category, self transfer) and Bank + Receipt pairs are rebuilt.
   Future<RecheckReport> run() async {
-    final pending = (await _smsRepo.getPending()).reversed.toList();
+    final all = (await _smsRepo.getPending()).reversed.toList();
+    // Payment app notification cards are not SMS: the SMS rules would
+    // reject them (not a bank sender), so they are left exactly as they are,
+    // and so is the link of an SMS paired with one.
+    final appIds = {
+      for (final s in all)
+        if (s.isNotification) s.id,
+    };
+    final pending = all.where((s) => !s.isNotification).toList();
     final ignored = await _ignoredRepo.getAll();
     var updated = 0;
     final removedIds = <int>[];
 
-    // Pairs are rebuilt from scratch below.
+    // Pairs are rebuilt from scratch below (except pairs with a notification).
     for (final sms in pending) {
-      if (sms.duplicateOf != null) {
+      if (sms.duplicateOf != null && !appIds.contains(sms.duplicateOf)) {
         await _smsRepo.setDuplicateOf(sms.id!, null);
       }
     }
 
     for (final old in pending) {
+      final pairedWithApp = appIds.contains(old.duplicateOf);
       final parsed = SmsParser.parse(
         old.sender,
         old.body,
@@ -57,13 +66,18 @@ class SmsRecheck {
         removedIds.add(old.id!);
         continue;
       }
-      final fresh = await _service.buildPending(
+      var fresh = await _service.buildPending(
         parsed,
         old.receivedAt,
         id: old.id,
       );
+      if (pairedWithApp) {
+        fresh = fresh.isSelfTransfer
+            ? fresh.copyWith(clearDuplicateOf: true)
+            : fresh.copyWith(duplicateOf: old.duplicateOf);
+      }
       await _smsRepo.update(fresh);
-      if (fresh.duplicateOf != null) {
+      if (fresh.duplicateOf != null && !pairedWithApp) {
         await _smsRepo.setDuplicateOf(fresh.duplicateOf!, fresh.id);
       }
       if (_changed(old, fresh)) updated++;

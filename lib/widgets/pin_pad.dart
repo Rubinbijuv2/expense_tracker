@@ -72,9 +72,11 @@ class _PinPadState extends State<PinPad> {
         Text(widget.title, style: text.titleLarge, textAlign: TextAlign.center),
         if (widget.subtitle != null) ...[
           const SizedBox(height: 4),
-          Text(widget.subtitle!,
-              style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-              textAlign: TextAlign.center),
+          Text(
+            widget.subtitle!,
+            style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+            textAlign: TextAlign.center,
+          ),
         ],
         const SizedBox(height: 24),
         Row(
@@ -128,28 +130,28 @@ class _PinPadState extends State<PinPad> {
   }
 
   Widget _key(String d) => Padding(
-        padding: const EdgeInsets.all(6),
-        child: SizedBox(
-          width: 76,
-          height: 60,
-          child: FilledButton.tonal(
-            onPressed: widget.enabled ? () => _press(d) : null,
-            child: Text(d, style: const TextStyle(fontSize: 24)),
-          ),
-        ),
-      );
+    padding: const EdgeInsets.all(6),
+    child: SizedBox(
+      width: 76,
+      height: 60,
+      child: FilledButton.tonal(
+        onPressed: widget.enabled ? () => _press(d) : null,
+        child: Text(d, style: const TextStyle(fontSize: 24)),
+      ),
+    ),
+  );
 
   Widget _iconKey(IconData icon, VoidCallback onTap) => Padding(
-        padding: const EdgeInsets.all(6),
-        child: SizedBox(
-          width: 76,
-          height: 60,
-          child: TextButton(
-            onPressed: widget.enabled ? onTap : null,
-            child: Icon(icon, size: 28),
-          ),
-        ),
-      );
+    padding: const EdgeInsets.all(6),
+    child: SizedBox(
+      width: 76,
+      height: 60,
+      child: TextButton(
+        onPressed: widget.enabled ? onTap : null,
+        child: Icon(icon, size: 28),
+      ),
+    ),
+  );
 }
 
 /// "Enter a new PIN" then "Enter it again". Calls [onPinChosen] once both

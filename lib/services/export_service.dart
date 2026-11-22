@@ -35,9 +35,8 @@ class ExportService {
       '${paise ~/ 100}.${(paise % 100).toString().padLeft(2, '0')}';
 
   /// "Expense", "Income", or "Self transfer" (not counted in any total).
-  static String typeLabel(TransactionModel t) => t.isSelfTransfer
-      ? 'Self transfer'
-      : (t.isExpense ? 'Expense' : 'Income');
+  static String typeLabel(TransactionModel t) =>
+      t.isSelfTransfer ? 'Self transfer' : (t.isExpense ? 'Expense' : 'Income');
 
   /// Header + one row per transaction (newest first). Pure, so it is unit-tested.
   static List<List<String>> csvRows(

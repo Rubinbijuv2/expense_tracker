@@ -33,7 +33,11 @@ void main() {
     test('no accounts saved → only the word "self" counts', () {
       expect(SelfTransfer.detect(toOwn, '1234', {}), isFalse);
       expect(
-        SelfTransfer.detect('Rs 1000 debited A/c XX1234 trf to SELF', '1234', {}),
+        SelfTransfer.detect(
+          'Rs 1000 debited A/c XX1234 trf to SELF',
+          '1234',
+          {},
+        ),
         isTrue,
       );
       expect(

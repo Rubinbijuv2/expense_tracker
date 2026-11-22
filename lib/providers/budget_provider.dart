@@ -14,7 +14,7 @@ import 'transaction_provider.dart';
 /// themselves when a transaction is added, edited or deleted.
 class BudgetProvider extends ChangeNotifier {
   BudgetProvider(this._txns, {BudgetRepo? budgetRepo})
-      : _repo = budgetRepo ?? BudgetRepo() {
+    : _repo = budgetRepo ?? BudgetRepo() {
     _txns.addListener(_recompute);
     _recompute();
     load();
@@ -46,6 +46,7 @@ class BudgetProvider extends ChangeNotifier {
   List<CategoryModel> get expenseCategories => _txns.categoriesFor('expense');
 
   void previousMonth() => _setMonth(DateTime(_month.year, _month.month - 1));
+
   /// You can plan up to next month, but not further.
   bool get canGoNext {
     final now = DateTime.now();

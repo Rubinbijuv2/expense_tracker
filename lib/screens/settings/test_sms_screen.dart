@@ -7,9 +7,12 @@ import '../../services/notification_service.dart';
 import '../../services/sms_service.dart';
 import '../detected/detected_sms_screen.dart';
 import 'sample_sms_data.dart';
+import 'test_notification_form.dart';
 
 /// Developer screen: type (or load) an SMS and push it through the real
-/// detection pipeline, as if it had just arrived on the phone.
+/// detection pipeline, as if it had just arrived on the phone. The second
+/// mode, "Test notification", does the same for a payment app
+/// notification (PLAN.md 7.7, in test_notification_form.dart).
 ///
 /// Opened by tapping the version number in Settings 5 times, and always
 /// listed in debug builds.
@@ -29,6 +32,7 @@ class _TestSmsScreenState extends State<TestSmsScreen> {
   final _bodyCtrl = TextEditingController();
   SmsResult? _result;
   bool _busy = false;
+  bool _notificationMode = false;
 
   @override
   void dispose() {
@@ -70,75 +74,107 @@ class _TestSmsScreenState extends State<TestSmsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Test SMS (developer)')),
+      appBar: AppBar(title: const Text('Test detection (developer)')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(
+                value: false,
+                icon: Icon(Icons.sms_outlined),
+                label: Text('Test SMS'),
+              ),
+              ButtonSegment(
+                value: true,
+                icon: Icon(Icons.notifications_outlined),
+                label: Text('Test notification'),
+              ),
+            ],
+            selected: {_notificationMode},
+            onSelectionChanged: (s) =>
+                setState(() => _notificationMode = s.first),
+          ),
+          const SizedBox(height: 16),
           Text(
-            'Sends the text through the same steps as a real incoming SMS: '
-            'filter, parse, category guess, duplicate check, save as pending '
-            'and notification.',
+            _notificationMode
+                ? 'Sends the notification through the same steps as a real '
+                      'one from a payment app: allow-list, parse, category '
+                      'guess, duplicate / merge check, save as pending and '
+                      'notification.'
+                : 'Sends the text through the same steps as a real incoming '
+                      'SMS: filter, parse, category guess, duplicate check, '
+                      'save as pending and notification.',
             style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 16),
-          DropdownButtonFormField<SampleSms>(
-            isExpanded: true,
-            hint: const Text('Load sample'),
-            decoration: const InputDecoration(
-              labelText: 'Load sample',
-              border: OutlineInputBorder(),
-            ),
-            // Version 1 samples first, then the v2 ones (kind labels,
-            // receipts, refunds, self transfers, a Bank + Receipt pair).
-            items: [
-              for (final s in [...sampleSmsList, ...sampleSmsV2List])
-                DropdownMenuItem(
-                  value: s,
-                  child: Text(s.label, overflow: TextOverflow.ellipsis),
-                ),
-            ],
-            onChanged: _loadSample,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _senderCtrl,
-            textCapitalization: TextCapitalization.characters,
-            decoration: const InputDecoration(
-              labelText: 'Sender',
-              helperText: 'Bank senders look like AX-HDFCBK',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _bodyCtrl,
-            minLines: 4,
-            maxLines: 8,
-            decoration: const InputDecoration(
-              labelText: 'Message',
-              alignLabelWithHint: true,
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: _busy ? null : _simulate,
-            icon: const Icon(Icons.sms),
-            label: const Text('Simulate incoming SMS'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (_result != null) _ResultCard(result: _result!),
+          if (_notificationMode)
+            const TestNotificationForm()
+          else ...[
+            ..._smsFields(),
+          ],
         ],
       ),
     );
   }
+
+  List<Widget> _smsFields() {
+    return [
+      DropdownButtonFormField<SampleSms>(
+        isExpanded: true,
+        hint: const Text('Load sample'),
+        decoration: const InputDecoration(
+          labelText: 'Load sample',
+          border: OutlineInputBorder(),
+        ),
+        // Version 1 samples first, then the v2 ones (kind labels,
+        // receipts, refunds, self transfers, a Bank + Receipt pair).
+        items: [
+          for (final s in [...sampleSmsList, ...sampleSmsV2List])
+            DropdownMenuItem(
+              value: s,
+              child: Text(s.label, overflow: TextOverflow.ellipsis),
+            ),
+        ],
+        onChanged: _loadSample,
+      ),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _senderCtrl,
+        textCapitalization: TextCapitalization.characters,
+        decoration: const InputDecoration(
+          labelText: 'Sender',
+          helperText: 'Bank senders look like AX-HDFCBK',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _bodyCtrl,
+        minLines: 4,
+        maxLines: 8,
+        decoration: const InputDecoration(
+          labelText: 'Message',
+          alignLabelWithHint: true,
+          border: OutlineInputBorder(),
+        ),
+      ),
+      const SizedBox(height: 16),
+      FilledButton.icon(
+        onPressed: _busy ? null : _simulate,
+        icon: const Icon(Icons.sms),
+        label: const Text('Simulate incoming SMS'),
+        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+      ),
+      const SizedBox(height: 16),
+      if (_result != null) SimulateResultCard(result: _result!),
+    ];
+  }
 }
 
-class _ResultCard extends StatelessWidget {
-  const _ResultCard({required this.result});
+/// What the pipeline did with the simulated SMS or notification.
+class SimulateResultCard extends StatelessWidget {
+  const SimulateResultCard({super.key, required this.result});
 
   final SmsResult result;
 
@@ -188,7 +224,7 @@ class _ResultCard extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: () => DetectedSmsScreen.open(context),
-              child: const Text('Open Detected SMS'),
+              child: const Text('Open Detected'),
             ),
           ),
         ],

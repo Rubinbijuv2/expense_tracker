@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:isolate';
 import 'dart:ui';
 
@@ -10,6 +11,7 @@ import '../data/merchant_rule_repo.dart';
 import '../models/detected_sms.dart';
 import '../models/transaction_model.dart';
 import '../services/notification_service.dart';
+import '../services/payment_notification_service.dart';
 import '../services/sms_action_service.dart';
 import '../services/sms_recheck.dart';
 import '../services/sms_service.dart';
@@ -27,16 +29,19 @@ class DetectedSmsProvider extends ChangeNotifier with WidgetsBindingObserver {
     MerchantRuleRepo? ruleRepo,
     IgnoredSenderRepo? ignoredRepo,
     SmsService? smsService,
+    PaymentNotificationService? notificationService,
   }) : _repo = smsRepo ?? DetectedSmsRepo(),
        _ruleRepo = ruleRepo ?? MerchantRuleRepo(),
        _ignoredRepo = ignoredRepo ?? IgnoredSenderRepo(),
-       _service = smsService ?? SmsService();
+       _service = smsService ?? SmsService(),
+       _appService = notificationService ?? PaymentNotificationService();
 
   final TransactionProvider _txns;
   final DetectedSmsRepo _repo;
   final MerchantRuleRepo _ruleRepo;
   final IgnoredSenderRepo _ignoredRepo;
   final SmsService _service;
+  final PaymentNotificationService _appService;
 
   static const String _askedKey = 'sms_permission_asked';
   static const String _recheckKey = 'sms_v2_recheck_done';
@@ -48,6 +53,7 @@ class DetectedSmsProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool _loading = true;
   Future<void>? _started;
   ReceivePort? _actionPort;
+  StreamSubscription<AppNotification>? _appEvents;
 
   /// Pending suggestions, newest first.
   List<DetectedSms> get pending => List.unmodifiable(_pending);
@@ -68,6 +74,7 @@ class DetectedSmsProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> _start() async {
     WidgetsBinding.instance.addObserver(this);
     _listenForNotificationActions();
+    _listenForPaymentApps();
     await _recheckOnce();
     await load();
     await _refreshPermission();
@@ -96,6 +103,20 @@ class DetectedSmsProvider extends ChangeNotifier with WidgetsBindingObserver {
       _txns.load();
     });
     _actionPort = port;
+  }
+
+  /// Payment app notifications while the app is running (section 7).
+  /// Kotlin only sends allow-listed apps, and nothing while the Settings
+  /// switch is off, so listening all the time is safe.
+  void _listenForPaymentApps() {
+    _appEvents = PaymentNotificationService.liveEvents().listen((n) async {
+      try {
+        final result = await _appService.handleIncoming(n);
+        if (result.isSaved) await load();
+      } catch (e) {
+        debugPrint('Could not handle payment notification: $e');
+      }
+    }, onError: (Object e) => debugPrint('Payment notification stream: $e'));
   }
 
   /// After the v2 parser update, old pending cards are checked again once.
@@ -195,6 +216,25 @@ class DetectedSmsProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// arriving now (same SmsService.handleIncoming as real SMS).
   Future<SmsResult> simulateIncoming(String sender, String body) async {
     final result = await _service.handleIncoming(sender, body, DateTime.now());
+    await load();
+    return result;
+  }
+
+  /// Developer "Test notification": treats it like a notification from
+  /// [packageName] arriving now (same pipeline as real ones).
+  Future<SmsResult> simulateNotification(
+    String packageName,
+    String title,
+    String text,
+  ) async {
+    final result = await _appService.handleIncoming(
+      AppNotification(
+        packageName: packageName,
+        title: title,
+        text: text,
+        postedAt: DateTime.now(),
+      ),
+    );
     await load();
     return result;
   }
@@ -336,6 +376,7 @@ class DetectedSmsProvider extends ChangeNotifier with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _actionPort?.close();
+    _appEvents?.cancel();
     IsolateNameServer.removePortNameMapping(SmsActionService.portName);
     super.dispose();
   }

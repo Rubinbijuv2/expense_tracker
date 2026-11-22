@@ -10,7 +10,7 @@ import 'transaction_provider.dart';
 /// update as soon as a transaction is added, edited or deleted.
 class ReportProvider extends ChangeNotifier {
   ReportProvider(this._txns, {ExportService? exportService})
-      : _export = exportService ?? ExportService() {
+    : _export = exportService ?? ExportService() {
     _txns.addListener(_recompute);
     _recompute();
   }

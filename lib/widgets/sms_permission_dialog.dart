@@ -26,14 +26,27 @@ class SmsPermissionDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Expense Tracker can read your bank and UPI SMS and suggest '
-              'transactions, so you don\'t have to type them.'),
+          Text(
+            'Expense Tracker can read your bank and UPI SMS and suggest '
+            'transactions, so you don\'t have to type them.',
+          ),
           SizedBox(height: 12),
-          _Point(icon: Icons.account_balance, text: 'Only SMS from bank senders '
-              '(like AX-HDFCBK) are read. Personal messages are skipped.'),
-          _Point(icon: Icons.cloud_off, text: 'Everything stays on this phone. '
-              'The app has no internet access.'),
-          _Point(icon: Icons.touch_app, text: 'Nothing is added until you tap Save.'),
+          _Point(
+            icon: Icons.account_balance,
+            text:
+                'Only SMS from bank senders '
+                '(like AX-HDFCBK) are read. Personal messages are skipped.',
+          ),
+          _Point(
+            icon: Icons.cloud_off,
+            text:
+                'Everything stays on this phone. '
+                'The app has no internet access.',
+          ),
+          _Point(
+            icon: Icons.touch_app,
+            text: 'Nothing is added until you tap Save.',
+          ),
         ],
       ),
       actions: [

@@ -43,17 +43,23 @@ class _Stat extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(label,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.labelSmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: 4),
           // FittedBox shrinks big amounts instead of cutting them off.
           FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(value,
-                style: theme.textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            child: Text(
+              value,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -85,9 +91,12 @@ class TopMerchantsCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Center(
-                  child: Text('No spending this month',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
+                  child: Text(
+                    'No spending this month',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ),
               )
             else
@@ -101,8 +110,11 @@ class TopMerchantsCard extends StatelessWidget {
 }
 
 class _MerchantRow extends StatelessWidget {
-  const _MerchantRow(
-      {required this.rank, required this.merchant, required this.ofTop});
+  const _MerchantRow({
+    required this.rank,
+    required this.merchant,
+    required this.ofTop,
+  });
 
   final int rank;
   final MerchantTotal merchant;
@@ -120,9 +132,12 @@ class _MerchantRow extends StatelessWidget {
           CircleAvatar(
             radius: 14,
             backgroundColor: scheme.primaryContainer,
-            child: Text('$rank',
-                style: theme.textTheme.labelMedium
-                    ?.copyWith(color: scheme.onPrimaryContainer)),
+            child: Text(
+              '$rank',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: scheme.onPrimaryContainer,
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -132,14 +147,19 @@ class _MerchantRow extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(merchant.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium),
+                      child: Text(
+                        merchant.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
+                      ),
                     ),
-                    Text(formatPaise(merchant.totalPaise),
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      formatPaise(merchant.totalPaise),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -152,9 +172,12 @@ class _MerchantRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text('$count ${count == 1 ? 'payment' : 'payments'}',
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: scheme.onSurfaceVariant)),
+                Text(
+                  '$count ${count == 1 ? 'payment' : 'payments'}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
           ),

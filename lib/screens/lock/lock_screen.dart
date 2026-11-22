@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/app_lock_provider.dart';
-import '../../providers/settings_provider.dart';
 import '../../widgets/pin_pad.dart';
 
 /// Covers the whole app until the right PIN (or fingerprint) is given.
@@ -40,9 +39,11 @@ class _LockScreenState extends State<LockScreen> {
     final lock = context.read<AppLockProvider>();
     final ok = await lock.unlockWithPin(pin);
     if (!mounted || ok) return;
-    setState(() => _error = lock.lockoutSecondsLeft > 0
-        ? 'Too many wrong tries.'
-        : 'Wrong PIN. Try again.');
+    setState(
+      () => _error = lock.lockoutSecondsLeft > 0
+          ? 'Too many wrong tries.'
+          : 'Wrong PIN. Try again.',
+    );
     _startTickerIfNeeded();
   }
 
@@ -71,7 +72,6 @@ class _LockScreenState extends State<LockScreen> {
   @override
   Widget build(BuildContext context) {
     final lock = context.watch<AppLockProvider>();
-    final name = context.watch<SettingsProvider>().name;
     final wait = lock.lockoutSecondsLeft;
     final scheme = Theme.of(context).colorScheme;
 
@@ -86,14 +86,16 @@ class _LockScreenState extends State<LockScreen> {
                 Icon(Icons.lock_outline, size: 48, color: scheme.primary),
                 const SizedBox(height: 16),
                 PinPad(
-                  title: name.isEmpty ? 'Welcome back' : 'Welcome back, $name',
+                  title: 'Welcome back',
                   subtitle: 'Enter your PIN',
                   errorText: wait > 0
                       ? '${_error ?? ''} Try again in $wait s.'.trim()
                       : _error,
                   enabled: wait == 0,
                   onCompleted: _onPin,
-                  onFingerprint: lock.fingerprintEnabled ? _tryFingerprint : null,
+                  onFingerprint: lock.fingerprintEnabled
+                      ? _tryFingerprint
+                      : null,
                 ),
               ],
             ),

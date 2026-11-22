@@ -66,6 +66,7 @@ class SmsActionService {
   final DetectedSmsRepo _smsRepo;
   final TransactionRepo _txnRepo;
   final CategoryRepo _categoryRepo;
+
   /// Null in the app: a real BudgetAlertService is made only when needed.
   final BudgetAlertService? budgetAlerts;
 

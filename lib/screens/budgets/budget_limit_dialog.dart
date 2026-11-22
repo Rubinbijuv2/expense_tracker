@@ -29,13 +29,14 @@ class BudgetLimitDialog extends StatefulWidget {
 
   /// `showDialog` puts the dialog on top of the screen and waits for
   /// `Navigator.pop(value)`, which becomes the returned value.
-  static Future<LimitChoice?> show(BuildContext context,
-          {required String title, int? currentPaise}) =>
-      showDialog<LimitChoice>(
-        context: context,
-        builder: (_) =>
-            BudgetLimitDialog(title: title, currentPaise: currentPaise),
-      );
+  static Future<LimitChoice?> show(
+    BuildContext context, {
+    required String title,
+    int? currentPaise,
+  }) => showDialog<LimitChoice>(
+    context: context,
+    builder: (_) => BudgetLimitDialog(title: title, currentPaise: currentPaise),
+  );
 
   @override
   State<BudgetLimitDialog> createState() => _BudgetLimitDialogState();
@@ -80,8 +81,10 @@ class _BudgetLimitDialogState extends State<BudgetLimitDialog> {
         if (widget.currentPaise != null)
           TextButton(
             onPressed: () => Navigator.pop(context, const RemoveLimit()),
-            child: Text('Remove limit',
-                style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text(
+              'Remove limit',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),

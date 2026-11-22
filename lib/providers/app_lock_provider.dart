@@ -14,10 +14,10 @@ class AppLockProvider extends ChangeNotifier with WidgetsBindingObserver {
     required this._fingerprintEnabled,
     AuthService? auth,
     DateTime Function()? clock,
-  })  : _pinSet = pinSet,
-        _locked = pinSet,
-        _auth = auth ?? AuthService(),
-        _now = clock ?? DateTime.now {
+  }) : _pinSet = pinSet,
+       _locked = pinSet,
+       _auth = auth ?? AuthService(),
+       _now = clock ?? DateTime.now {
     WidgetsBinding.instance.addObserver(this);
   }
 

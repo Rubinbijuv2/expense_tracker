@@ -492,9 +492,7 @@ void main() {
       );
       expect(bank!.duplicateOf, receipt!.id);
       expect(smsRepo.rows.first.duplicateOf, bank.id); // linked both ways
-      final cards = DetectedSmsProvider.groupPairs(
-        await smsRepo.getPending(),
-      );
+      final cards = DetectedSmsProvider.groupPairs(await smsRepo.getPending());
       expect(cards, hasLength(1));
       expect(cards.single.map((s) => s.kind), ['bank', 'receipt']);
     });
@@ -573,7 +571,10 @@ void main() {
 
     test('Save adds the transaction and marks the SMS saved', () async {
       final sms = await process(swiggySender, swiggyBody, now);
-      expect(await actions.handle(SmsActionService.saveAction, sms!.id!), isTrue);
+      expect(
+        await actions.handle(SmsActionService.saveAction, sms!.id!),
+        isTrue,
+      );
       expect(txnRepo.inserted.single.amountPaise, 45000);
       expect(txnRepo.inserted.single.categoryId, 1);
       expect(txnRepo.inserted.single.source, 'sms');

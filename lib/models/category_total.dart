@@ -16,12 +16,12 @@ class CategoryTotal {
   });
 
   factory CategoryTotal.fromMap(Map<String, Object?> map) => CategoryTotal(
-        categoryId: map['category_id'] as int,
-        name: map['name'] as String,
-        icon: map['icon'] as String,
-        color: map['color'] as int,
-        totalPaise: map['total_paise'] as int? ?? 0,
-      );
+    categoryId: map['category_id'] as int,
+    name: map['name'] as String,
+    icon: map['icon'] as String,
+    color: map['color'] as int,
+    totalPaise: map['total_paise'] as int? ?? 0,
+  );
 
   @override
   String toString() => 'CategoryTotal($name, $totalPaise paise)';

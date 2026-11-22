@@ -18,8 +18,12 @@ class MerchantRuleRepo {
 
   Future<int> update(MerchantRule rule) async {
     final db = await _helper.database;
-    return db.update(_table, rule.toMap(),
-        where: 'id = ?', whereArgs: [rule.id]);
+    return db.update(
+      _table,
+      rule.toMap(),
+      where: 'id = ?',
+      whereArgs: [rule.id],
+    );
   }
 
   Future<int> delete(int id) async {
@@ -29,8 +33,12 @@ class MerchantRuleRepo {
 
   Future<MerchantRule?> getById(int id) async {
     final db = await _helper.database;
-    final rows =
-        await db.query(_table, where: 'id = ?', whereArgs: [id], limit: 1);
+    final rows = await db.query(
+      _table,
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
     return rows.isEmpty ? null : MerchantRule.fromMap(rows.first);
   }
 

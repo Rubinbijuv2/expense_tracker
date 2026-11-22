@@ -7,15 +7,27 @@ import '../../utils/category_icons.dart';
 
 /// Colours a custom category can use.
 const List<int> categoryColors = [
-  0xFFEF6C00, 0xFF1E88E5, 0xFFD81B60, 0xFF6D4C41, 0xFF5E35B1, 0xFFE53935,
-  0xFF00897B, 0xFF8E24AA, 0xFF43A047, 0xFF757575, 0xFFFDD835, 0xFF3949AB,
+  0xFFEF6C00,
+  0xFF1E88E5,
+  0xFFD81B60,
+  0xFF6D4C41,
+  0xFF5E35B1,
+  0xFFE53935,
+  0xFF00897B,
+  0xFF8E24AA,
+  0xFF43A047,
+  0xFF757575,
+  0xFFFDD835,
+  0xFF3949AB,
 ];
 
 /// Add a category ([existing] null) or edit one. For default categories
 /// only the icon and colour can change (no rename, no delete).
 /// Custom categories can be renamed and deleted (if no transaction uses them).
-Future<void> showCategoryEditDialog(BuildContext context,
-    {CategoryModel? existing}) {
+Future<void> showCategoryEditDialog(
+  BuildContext context, {
+  CategoryModel? existing,
+}) {
   return showDialog<void>(
     context: context,
     builder: (_) => _CategoryEditDialog(existing: existing),
@@ -57,9 +69,15 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
       setState(() => _error = 'A category with this name already exists');
       return;
     }
-    final category = (widget.existing ??
-            CategoryModel(name: name, icon: _icon, color: _color, type: _type))
-        .copyWith(name: name, icon: _icon, color: _color, type: _type);
+    final category =
+        (widget.existing ??
+                CategoryModel(
+                  name: name,
+                  icon: _icon,
+                  color: _color,
+                  type: _type,
+                ))
+            .copyWith(name: name, icon: _icon, color: _color, type: _type);
     await txns.saveCategory(category);
     if (mounted) Navigator.pop(context);
   }
@@ -70,12 +88,16 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
     final ok = await txns.deleteCategory(widget.existing!);
     if (!mounted) return;
     Navigator.pop(context);
-    messenger.showSnackBar(SnackBar(
-      content: Text(ok
-          ? 'Deleted "${widget.existing!.name}"'
-          : 'Can\'t delete: some transactions or repeat payments use '
-              'this category. Change them first.'),
-    ));
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'Deleted "${widget.existing!.name}"'
+              : 'Can\'t delete: some transactions or repeat payments use '
+                    'this category. Change them first.',
+        ),
+      ),
+    );
   }
 
   @override
@@ -130,7 +152,11 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
                       radius: 16,
                       backgroundColor: Color(c),
                       child: c == _color
-                          ? const Icon(Icons.check, size: 18, color: Colors.white)
+                          ? const Icon(
+                              Icons.check,
+                              size: 18,
+                              color: Colors.white,
+                            )
                           : null,
                     ),
                   ),
@@ -152,8 +178,10 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
                           : null,
                     ),
                     onPressed: () => setState(() => _icon = entry.key),
-                    icon: Icon(entry.value,
-                        color: entry.key == _icon ? Color(_color) : null),
+                    icon: Icon(
+                      entry.value,
+                      color: entry.key == _icon ? Color(_color) : null,
+                    ),
                   ),
               ],
             ),
@@ -165,12 +193,14 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
           TextButton(
             onPressed: _delete,
             style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error),
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Delete'),
           ),
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel')),
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
         FilledButton(onPressed: _save, child: const Text('Save')),
       ],
     );

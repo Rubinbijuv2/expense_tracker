@@ -33,7 +33,11 @@ class DashboardSummary {
   static const int recentCount = 5;
 
   static const empty = DashboardSummary(
-      spentPaise: 0, incomePaise: 0, byCategory: [], recent: []);
+    spentPaise: 0,
+    incomePaise: 0,
+    byCategory: [],
+    recent: [],
+  );
 
   /// Builds the summary for the month containing [month].
   /// [txns] must be sorted newest first (as TransactionProvider keeps them).
@@ -72,8 +76,7 @@ class DashboardSummary {
         color: cat?.color ?? 0xFF9E9E9E,
         totalPaise: e.value,
       );
-    }).toList()
-      ..sort((a, b) => b.totalPaise.compareTo(a.totalPaise));
+    }).toList()..sort((a, b) => b.totalPaise.compareTo(a.totalPaise));
 
     return DashboardSummary(
       spentPaise: spent,
@@ -90,7 +93,7 @@ class DashboardSummary {
 /// edited, deleted or restored, [_recompute] runs and Home rebuilds.
 class DashboardProvider extends ChangeNotifier {
   DashboardProvider(this._txns, {BudgetRepo? budgetRepo})
-      : _budgetRepo = budgetRepo ?? BudgetRepo() {
+    : _budgetRepo = budgetRepo ?? BudgetRepo() {
     _txns.addListener(_recompute);
     _recompute();
     loadBudget();
@@ -132,7 +135,10 @@ class DashboardProvider extends ChangeNotifier {
 
   void _recompute() {
     _summary = DashboardSummary.compute(
-        _txns.transactions, _month, _txns.categoryById);
+      _txns.transactions,
+      _month,
+      _txns.categoryById,
+    );
     notifyListeners();
   }
 

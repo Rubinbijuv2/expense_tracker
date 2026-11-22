@@ -34,8 +34,12 @@ class CategoryRepo {
 
   Future<CategoryModel?> getById(int id) async {
     final db = await _helper.database;
-    final rows =
-        await db.query(_table, where: 'id = ?', whereArgs: [id], limit: 1);
+    final rows = await db.query(
+      _table,
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
     return rows.isEmpty ? null : CategoryModel.fromMap(rows.first);
   }
 

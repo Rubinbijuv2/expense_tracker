@@ -25,8 +25,12 @@ class DetectedSmsRepo {
 
   Future<DetectedSms?> getById(int id) async {
     final db = await _helper.database;
-    final rows =
-        await db.query(_table, where: 'id = ?', whereArgs: [id], limit: 1);
+    final rows = await db.query(
+      _table,
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
     return rows.isEmpty ? null : DetectedSms.fromMap(rows.first);
   }
 
@@ -55,15 +59,23 @@ class DetectedSmsRepo {
   /// Sets status to 'pending', 'saved' or 'ignored'.
   Future<int> updateStatus(int id, String status) async {
     final db = await _helper.database;
-    return db.update(_table, {'status': status},
-        where: 'id = ?', whereArgs: [id]);
+    return db.update(
+      _table,
+      {'status': status},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   /// "Ignore all" on the Detected SMS screen.
   Future<int> ignoreAllPending() async {
     final db = await _helper.database;
-    return db.update(_table, {'status': 'ignored'},
-        where: 'status = ?', whereArgs: ['pending']);
+    return db.update(
+      _table,
+      {'status': 'ignored'},
+      where: 'status = ?',
+      whereArgs: ['pending'],
+    );
   }
 
   /// True if this exact SMS body was already stored (duplicate check).
@@ -142,6 +154,8 @@ class DetectedSmsRepo {
 
   /// True if a *pending* SMS with the same amount and merchant arrived
   /// within [window] of [at] (PLAN.md rule 10). Merchant is case-insensitive.
+  /// Payment app notifications are not counted here: a bank SMS and a
+  /// notification for the same payment become a merge card (section 7.5).
   Future<bool> existsSimilarPending(
     int amountPaise,
     String merchant,
@@ -150,13 +164,42 @@ class DetectedSmsRepo {
   }) async {
     final db = await _helper.database;
     final rows = await db.rawQuery(
-      'SELECT 1 FROM $_table WHERE status = ? AND amount_paise = ? '
+      'SELECT 1 FROM $_table WHERE status = ? AND source = ? '
+      'AND amount_paise = ? '
       'AND LOWER(merchant) = LOWER(?) AND received_at >= ? AND received_at <= ? '
       'LIMIT 1',
       [
         'pending',
+        'sms',
         amountPaise,
         merchant,
+        at.subtract(window).toIso8601String(),
+        at.add(window).toIso8601String(),
+      ],
+    );
+    return rows.isNotEmpty;
+  }
+
+  /// Section 7.5: payment apps often update a notification, so the same
+  /// one arrives again. True if [app] already gave this amount and text
+  /// within [window] of [at] (any status, so a saved one also counts).
+  Future<bool> existsRecentFromApp(
+    String app,
+    int amountPaise,
+    String body,
+    DateTime at, {
+    Duration window = const Duration(minutes: 2),
+  }) async {
+    final db = await _helper.database;
+    final rows = await db.rawQuery(
+      'SELECT 1 FROM $_table WHERE source = ? AND sender = ? '
+      'AND amount_paise = ? AND body = ? '
+      'AND received_at >= ? AND received_at <= ? LIMIT 1',
+      [
+        'notification',
+        app,
+        amountPaise,
+        body,
         at.subtract(window).toIso8601String(),
         at.add(window).toIso8601String(),
       ],

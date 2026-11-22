@@ -26,9 +26,9 @@ class TransactionProvider extends ChangeNotifier {
     TransactionRepo? transactionRepo,
     CategoryRepo? categoryRepo,
     BudgetAlertService? budgetAlerts,
-  })  : _txnRepo = transactionRepo ?? TransactionRepo(),
-        _categoryRepo = categoryRepo ?? CategoryRepo(),
-        _budgetAlerts = budgetAlerts ?? BudgetAlertService();
+  }) : _txnRepo = transactionRepo ?? TransactionRepo(),
+       _categoryRepo = categoryRepo ?? CategoryRepo(),
+       _budgetAlerts = budgetAlerts ?? BudgetAlertService();
 
   final TransactionRepo _txnRepo;
   final CategoryRepo _categoryRepo;
@@ -111,7 +111,8 @@ class TransactionProvider extends ChangeNotifier {
 
   /// True if [txn] is income in the "Refund" category.
   bool isRefund(TransactionModel txn) =>
-      !txn.isExpense && RefundMatcher.isRefundCategory(categoryById(txn.categoryId));
+      !txn.isExpense &&
+      RefundMatcher.isRefundCategory(categoryById(txn.categoryId));
 
   /// Recent expenses that the refund [txn] may belong to.
   List<TransactionModel> refundCandidates(TransactionModel txn) =>
@@ -138,10 +139,12 @@ class TransactionProvider extends ChangeNotifier {
 
   /// True if another category of the same type already has this name.
   bool categoryNameTaken(String name, String type, {int? exceptId}) =>
-      _categories.values.any((c) =>
-          c.type == type &&
-          c.id != exceptId &&
-          c.name.toLowerCase() == name.trim().toLowerCase());
+      _categories.values.any(
+        (c) =>
+            c.type == type &&
+            c.id != exceptId &&
+            c.name.toLowerCase() == name.trim().toLowerCase(),
+      );
 
   Future<void> saveCategory(CategoryModel category) async {
     if (category.id == null) {

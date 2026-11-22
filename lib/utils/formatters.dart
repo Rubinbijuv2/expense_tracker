@@ -4,8 +4,11 @@ import 'package:intl/intl.dart';
 /// and only turned into text here, for display.
 
 // 'en_IN' gives Indian grouping: 1,23,45,678.90
-final NumberFormat _rupees =
-    NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+final NumberFormat _rupees = NumberFormat.currency(
+  locale: 'en_IN',
+  symbol: '₹',
+  decimalDigits: 2,
+);
 
 /// 123450 → "₹1,234.50", 12345678 → "₹1,23,456.78", -50000 → "-₹500.00".
 String formatPaise(int paise) {
@@ -50,8 +53,10 @@ int? parseToPaise(String? text) {
 String monthKey(DateTime date) => DateFormat('yyyy-MM').format(date);
 
 // Short Indian-style amounts for chart axes, without decimals.
-final NumberFormat _compactRupees =
-    NumberFormat.compactSimpleCurrency(locale: 'en_IN', name: 'INR');
+final NumberFormat _compactRupees = NumberFormat.compactSimpleCurrency(
+  locale: 'en_IN',
+  name: 'INR',
+);
 
 /// Short label for chart axes: 120000 paise → "₹1.2K", 25000000 → "₹2.5L".
 String formatPaiseCompact(int paise) =>

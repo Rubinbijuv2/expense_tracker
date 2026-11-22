@@ -13,7 +13,12 @@ class AppConstants {
   static const Color seedColor = Colors.teal;
 
   /// Payment modes shown as chips on the Add/Edit screen.
-  static const List<String> paymentModes = ['Cash', 'UPI', 'Card', 'Net banking'];
+  static const List<String> paymentModes = [
+    'Cash',
+    'UPI',
+    'Card',
+    'Net banking',
+  ];
   static const String defaultPaymentMode = 'UPI';
 }
 

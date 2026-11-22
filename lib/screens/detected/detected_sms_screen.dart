@@ -64,8 +64,8 @@ class DetectedSmsScreen extends StatelessWidget {
                         final card = cards[i];
                         CategoryModel? catOf(DetectedSms s) =>
                             s.guessedCategoryId == null
-                                ? null
-                                : txns.categoryById(s.guessedCategoryId!);
+                            ? null
+                            : txns.categoryById(s.guessedCategoryId!);
                         if (card.length == 2) {
                           final (bank, receipt) = (card[0], card[1]);
                           return MergeCard(
@@ -201,7 +201,9 @@ class DetectedSmsScreen extends StatelessWidget {
     final messenger = ScaffoldMessenger.of(context);
     await context.read<DetectedSmsProvider>().merge(bank, receipt);
     messenger.showSnackBar(
-      const SnackBar(content: Text('Merged into one card. Tap Save to add it.')),
+      const SnackBar(
+        content: Text('Merged into one card. Tap Save to add it.'),
+      ),
     );
   }
 

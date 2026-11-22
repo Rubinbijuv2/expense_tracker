@@ -34,16 +34,14 @@ class AddEditScreen extends StatefulWidget {
 
   /// Opens this screen. Used by the + buttons and by tapping a row.
   static Future<void> open(BuildContext context, {TransactionModel? txn}) {
-    return Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => AddEditScreen(existing: txn)),
-    );
+    return Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => AddEditScreen(existing: txn)));
   }
 
   /// "Edit" on a detected SMS: the form starts filled with the SMS details.
   static Future<void> openFromSms(BuildContext context, DetectedSms sms) {
-    return Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => AddEditScreen(fromSms: sms)),
-    );
+    return Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => AddEditScreen(fromSms: sms)));
   }
 
   @override
@@ -72,7 +70,8 @@ class _AddEditScreenState extends State<AddEditScreen> {
     final t = widget.existing;
     _type = t?.type ?? 'expense';
     _categoryId = t?.categoryId;
-    _paymentMode = t?.paymentMode ??
+    _paymentMode =
+        t?.paymentMode ??
         widget.initialPaymentMode ??
         AppConstants.defaultPaymentMode;
     _dateTime = t?.dateTime ?? DateTime.now();
@@ -196,11 +195,13 @@ class _AddEditScreenState extends State<AddEditScreen> {
         content: const Text('You can undo this for a few seconds.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Delete')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
@@ -218,9 +219,11 @@ class _AddEditScreenState extends State<AddEditScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.fromSms != null
-            ? 'Add from SMS: ${widget.fromSms!.merchant ?? 'Unknown'}'
-            : (_isEdit ? 'Edit transaction' : 'Add transaction')),
+        title: Text(
+          widget.fromSms != null
+              ? 'Add from SMS: ${widget.fromSms!.merchant ?? 'Unknown'}'
+              : (_isEdit ? 'Edit transaction' : 'Add transaction'),
+        ),
         actions: [
           if (_isEdit)
             IconButton(
@@ -241,8 +244,9 @@ class _AddEditScreenState extends State<AddEditScreen> {
               controller: _amountCtrl,
               autofocus: !_isEdit,
               // Number keyboard with a decimal point.
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                 LengthLimitingTextInputFormatter(16),
@@ -269,9 +273,12 @@ class _AddEditScreenState extends State<AddEditScreen> {
             if (_categoryError != null)
               Padding(
                 padding: const EdgeInsets.only(top: 6, left: 12),
-                child: Text(_categoryError!,
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.colorScheme.error)),
+                child: Text(
+                  _categoryError!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
               ),
             const SizedBox(height: 20),
             Text('Payment mode', style: theme.textTheme.titleSmall),
@@ -307,7 +314,8 @@ class _AddEditScreenState extends State<AddEditScreen> {
               icon: const Icon(Icons.check),
               label: Text(_isEdit ? 'Save changes' : 'Save'),
               style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(52)),
+                minimumSize: const Size.fromHeight(52),
+              ),
             ),
           ],
         ),

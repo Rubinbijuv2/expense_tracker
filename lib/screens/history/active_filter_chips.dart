@@ -27,7 +27,9 @@ class ActiveFilterChips extends StatelessWidget {
           ? fmt.format(from)
           : '${fmt.format(from)} – ${fmt.format(to)}';
     }
-    return from != null ? 'From ${fmt.format(from)}' : 'Until ${fmt.format(to!)}';
+    return from != null
+        ? 'From ${fmt.format(from)}'
+        : 'Until ${fmt.format(to!)}';
   }
 
   String _amountLabel() {
@@ -42,26 +44,34 @@ class ActiveFilterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final chips = <Widget>[
       if (filter.type != null)
-        _chip(filter.type == 'expense' ? 'Expense' : 'Income',
-            () => onChanged(filter.copyWith(clearType: true))),
+        _chip(
+          filter.type == 'expense' ? 'Expense' : 'Income',
+          () => onChanged(filter.copyWith(clearType: true)),
+        ),
       if (filter.hasDateRange)
         _chip(_dateLabel(), () => onChanged(filter.copyWith(clearDates: true))),
       // One chip per category and per mode, so each can be removed alone.
       for (final id in filter.categoryIds)
         _chip(
           categoryById(id)?.name ?? 'Unknown',
-          () => onChanged(filter.copyWith(
-              categoryIds: {...filter.categoryIds}..remove(id))),
+          () => onChanged(
+            filter.copyWith(categoryIds: {...filter.categoryIds}..remove(id)),
+          ),
         ),
       for (final mode in filter.paymentModes)
         _chip(
           mode,
-          () => onChanged(filter.copyWith(
-              paymentModes: {...filter.paymentModes}..remove(mode))),
+          () => onChanged(
+            filter.copyWith(
+              paymentModes: {...filter.paymentModes}..remove(mode),
+            ),
+          ),
         ),
       if (filter.hasAmountRange)
-        _chip(_amountLabel(),
-            () => onChanged(filter.copyWith(clearAmounts: true))),
+        _chip(
+          _amountLabel(),
+          () => onChanged(filter.copyWith(clearAmounts: true)),
+        ),
     ];
     if (chips.isEmpty) return const SizedBox.shrink();
 
@@ -78,10 +88,10 @@ class ActiveFilterChips extends StatelessWidget {
   }
 
   Widget _chip(String label, VoidCallback onRemove) => InputChip(
-        label: Text(label),
-        onDeleted: onRemove,
-        deleteButtonTooltipMessage: 'Remove filter',
-      );
+    label: Text(label),
+    onDeleted: onRemove,
+    deleteButtonTooltipMessage: 'Remove filter',
+  );
 }
 
 /// "12 results · Spent ₹4,250.00 · Income ₹1,000.00" for the filtered list.
@@ -107,12 +117,18 @@ class FilterTotalsBar extends StatelessWidget {
         spacing: 12,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Text('$count ${count == 1 ? 'result' : 'results'}',
-              style: style?.copyWith(fontWeight: FontWeight.w600)),
-          Text('Spent ${formatPaise(spentPaise)}',
-              style: style?.copyWith(color: theme.colorScheme.error)),
-          Text('Income ${formatPaise(incomePaise)}',
-              style: style?.copyWith(color: Colors.green.shade600)),
+          Text(
+            '$count ${count == 1 ? 'result' : 'results'}',
+            style: style?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          Text(
+            'Spent ${formatPaise(spentPaise)}',
+            style: style?.copyWith(color: theme.colorScheme.error),
+          ),
+          Text(
+            'Income ${formatPaise(incomePaise)}',
+            style: style?.copyWith(color: Colors.green.shade600),
+          ),
         ],
       ),
     );

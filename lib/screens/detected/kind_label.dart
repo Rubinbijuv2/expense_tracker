@@ -4,7 +4,8 @@ import '../../models/detected_sms.dart';
 
 /// The small coloured label on a detected SMS card (PLAN.md rule 4):
 /// **Bank** (high confidence), **Receipt** (medium), **Check this** (low),
-/// or **Self transfer**.
+/// **Self transfer**, or **App · Google Pay** for a payment app
+/// notification (PLAN.md 7.4).
 class KindLabel extends StatelessWidget {
   const KindLabel({super.key, required this.sms});
 
@@ -15,9 +16,15 @@ class KindLabel extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final (text, icon, color) = sms.isSelfTransfer
         ? ('Self transfer', Icons.swap_horiz, scheme.outline)
+        : sms.isNotification
+        ? (sms.kindLabel, Icons.phone_android, Colors.purple.shade700)
         : switch (sms.kind) {
             'bank' => ('Bank', Icons.verified_outlined, Colors.green.shade700),
-            'receipt' => ('Receipt', Icons.receipt_outlined, Colors.blue.shade700),
+            'receipt' => (
+              'Receipt',
+              Icons.receipt_outlined,
+              Colors.blue.shade700,
+            ),
             _ => ('Check this', Icons.help_outline, Colors.orange.shade800),
           };
     return Container(
@@ -34,10 +41,8 @@ class KindLabel extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             text,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(context).textTheme.labelSmall
+                ?.copyWith(color: color, fontWeight: FontWeight.w600),
           ),
         ],
       ),

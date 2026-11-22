@@ -84,7 +84,11 @@ class NotificationService {
     final paired = sms.duplicateOf != null;
     await _safeShow(
       _smsIdOffset + sms.id!,
-      paired ? 'Looks like the same payment' : 'New ${sms.type} detected',
+      paired
+          ? (sms.isNotification
+                ? 'Found in ${sms.sourceApp} and bank SMS'
+                : 'Looks like the same payment')
+          : 'New ${sms.type} detected',
       paired ? pairedText(sms) : detectedText(sms),
       payload: '${sms.id}',
       actions: paired

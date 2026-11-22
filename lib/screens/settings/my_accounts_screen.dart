@@ -13,9 +13,9 @@ import '../../utils/validators.dart';
 class MyAccountsScreen extends StatelessWidget {
   const MyAccountsScreen({super.key});
 
-  static Future<void> open(BuildContext context) => Navigator.of(
-    context,
-  ).push(MaterialPageRoute(builder: (_) => const MyAccountsScreen()));
+  static Future<void> open(BuildContext context) =>
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const MyAccountsScreen()));
 
   @override
   Widget build(BuildContext context) {

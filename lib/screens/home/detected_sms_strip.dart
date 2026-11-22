@@ -69,8 +69,10 @@ class _PermissionBanner extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.sms_failed_outlined,
-                    color: scheme.onTertiaryContainer),
+                Icon(
+                  Icons.sms_failed_outlined,
+                  color: scheme.onTertiaryContainer,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -115,9 +117,11 @@ class _PendingStrip extends StatelessWidget {
             children: [
               ListTile(
                 leading: const Icon(Icons.sms_outlined),
-                title: Text(pending.length == 1
-                    ? '1 detected SMS'
-                    : '${pending.length} detected SMS'),
+                title: Text(
+                  pending.length == 1
+                      ? '1 detected SMS'
+                      : '${pending.length} detected SMS',
+                ),
                 subtitle: const Text('Tap to save or ignore'),
                 trailing: const Icon(Icons.chevron_right),
               ),

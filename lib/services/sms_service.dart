@@ -261,7 +261,8 @@ class SmsService {
   }
 
   /// Rule 12: a pending SMS of the other kind (bank ↔ receipt) with the
-  /// same amount within 30 minutes. 'check' SMS are never paired.
+  /// same amount and type within 30 minutes. 'check' SMS are never paired.
+  /// A payment app notification counts as a receipt (section 7.5).
   Future<int?> _findPartnerId(ParsedSms parsed, DateTime at) async {
     final other = switch (parsed.kind) {
       'bank' => 'receipt',
@@ -275,7 +276,7 @@ class SmsService {
       at,
       window: pairWindow,
     );
-    return partner?.id;
+    return partner?.type == parsed.type ? partner?.id : null;
   }
 
   /// Rule 10, plus a safety net: the guessed category must match the type.

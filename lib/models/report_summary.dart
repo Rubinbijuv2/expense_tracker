@@ -61,7 +61,8 @@ class ReportSummary {
   int get daysInMonth => dailySpentPaise.length;
 
   /// Average spent per day in whole paise (rounded down).
-  int get averagePerDayPaise => daysCounted == 0 ? 0 : spentPaise ~/ daysCounted;
+  int get averagePerDayPaise =>
+      daysCounted == 0 ? 0 : spentPaise ~/ daysCounted;
 
   /// Builds the report for the month containing [month].
   /// [txns] must be sorted newest first (as TransactionProvider keeps them).
@@ -78,7 +79,8 @@ class ReportSummary {
     // Bar chart: the 6 months ending with m. `month - 5` works across years
     // because DateTime(2026, -1) becomes November 2025.
     final barMonths = [
-      for (var i = monthsInBarChart - 1; i >= 0; i--) DateTime(m.year, m.month - i)
+      for (var i = monthsInBarChart - 1; i >= 0; i--)
+        DateTime(m.year, m.month - i),
     ];
     final spentPerMonth = {for (final bm in barMonths) bm: 0};
 
@@ -109,15 +111,18 @@ class ReportSummary {
       final display = name.isEmpty ? unknownMerchant : name;
       // The newest spelling is kept because the list is newest first.
       final sum = merchants.putIfAbsent(
-          display.toLowerCase(), () => _MerchantSum(display));
+        display.toLowerCase(),
+        () => _MerchantSum(display),
+      );
       sum.paise += t.amountPaise;
       sum.count++;
     }
 
-    final top = merchants.values
-        .map((s) => MerchantTotal(s.name, s.paise, s.count))
-        .toList()
-      ..sort((a, b) => b.totalPaise.compareTo(a.totalPaise));
+    final top =
+        merchants.values
+            .map((s) => MerchantTotal(s.name, s.paise, s.count))
+            .toList()
+          ..sort((a, b) => b.totalPaise.compareTo(a.totalPaise));
 
     final thisMonth = DateTime(now.year, now.month);
     final int daysCounted;
@@ -133,7 +138,9 @@ class ReportSummary {
       month: m,
       spentPaise: spent,
       incomePaise: income,
-      lastSixMonths: [for (final bm in barMonths) MonthTotal(bm, spentPerMonth[bm]!)],
+      lastSixMonths: [
+        for (final bm in barMonths) MonthTotal(bm, spentPerMonth[bm]!),
+      ],
       dailySpentPaise: daily,
       topMerchants: top.take(topMerchantCount).toList(),
       transactions: monthTxns,

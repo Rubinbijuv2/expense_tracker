@@ -1,4 +1,5 @@
-/// One row of the `detected_sms` table: a bank SMS parsed into a suggestion.
+/// One row of the `detected_sms` table: a bank SMS (or, since v3, a payment
+/// app notification) parsed into a suggestion.
 class DetectedSms {
   final int? id;
   final String sender;
@@ -15,6 +16,8 @@ class DetectedSms {
   final bool isSelfTransfer; // between the user's own accounts (rule 13)
   final int? duplicateOf; // id of the other SMS of a Bank + Receipt pair
   final int? suggestedRecurringId; // used from build step 13
+  final String source; // 'sms' or 'notification' (v3)
+  final String? sourceApp; // 'Google Pay' etc. for notifications (v3)
 
   const DetectedSms({
     this.id,
@@ -32,16 +35,24 @@ class DetectedSms {
     this.isSelfTransfer = false,
     this.duplicateOf,
     this.suggestedRecurringId,
+    this.source = 'sms',
+    this.sourceApp,
   });
 
   bool get isPending => status == 'pending';
 
-  /// Text for the label on the card (rule 4).
-  String get kindLabel => switch (kind) {
-    'bank' => 'Bank',
-    'receipt' => 'Receipt',
-    _ => 'Check this',
-  };
+  /// Came from a payment app notification (PLAN.md section 7), not an SMS.
+  bool get isNotification => source == 'notification';
+
+  /// Text for the label on the card (rule 4). Notifications say
+  /// "App · Google Pay" (section 7.4).
+  String get kindLabel => isNotification
+      ? 'App · ${sourceApp ?? sender}'
+      : switch (kind) {
+          'bank' => 'Bank',
+          'receipt' => 'Receipt',
+          _ => 'Check this',
+        };
 
   Map<String, Object?> toMap() => {
     if (id != null) 'id': id,
@@ -59,6 +70,8 @@ class DetectedSms {
     'is_self_transfer': isSelfTransfer ? 1 : 0,
     'duplicate_of': duplicateOf,
     'suggested_recurring_id': suggestedRecurringId,
+    'source': source,
+    'source_app': sourceApp,
   };
 
   factory DetectedSms.fromMap(Map<String, Object?> map) => DetectedSms(
@@ -77,6 +90,8 @@ class DetectedSms {
     isSelfTransfer: (map['is_self_transfer'] as int? ?? 0) == 1,
     duplicateOf: map['duplicate_of'] as int?,
     suggestedRecurringId: map['suggested_recurring_id'] as int?,
+    source: map['source'] as String? ?? 'sms',
+    sourceApp: map['source_app'] as String?,
   );
 
   /// [clearDuplicateOf] sets duplicateOf back to null ("Not the same").
@@ -90,6 +105,8 @@ class DetectedSms {
     bool? isSelfTransfer,
     int? duplicateOf,
     bool clearDuplicateOf = false,
+    String? source,
+    String? sourceApp,
   }) => DetectedSms(
     id: id ?? this.id,
     sender: sender,
@@ -106,6 +123,8 @@ class DetectedSms {
     isSelfTransfer: isSelfTransfer ?? this.isSelfTransfer,
     duplicateOf: clearDuplicateOf ? null : (duplicateOf ?? this.duplicateOf),
     suggestedRecurringId: suggestedRecurringId,
+    source: source ?? this.source,
+    sourceApp: sourceApp ?? this.sourceApp,
   );
 
   @override

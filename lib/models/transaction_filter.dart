@@ -62,17 +62,16 @@ class TransactionFilter {
     bool clearAmounts = false,
     String? type,
     bool clearType = false,
-  }) =>
-      TransactionFilter(
-        query: query ?? this.query,
-        from: clearDates ? null : (from ?? this.from),
-        to: clearDates ? null : (to ?? this.to),
-        categoryIds: categoryIds ?? this.categoryIds,
-        paymentModes: paymentModes ?? this.paymentModes,
-        minPaise: clearAmounts ? null : (minPaise ?? this.minPaise),
-        maxPaise: clearAmounts ? null : (maxPaise ?? this.maxPaise),
-        type: clearType ? null : (type ?? this.type),
-      );
+  }) => TransactionFilter(
+    query: query ?? this.query,
+    from: clearDates ? null : (from ?? this.from),
+    to: clearDates ? null : (to ?? this.to),
+    categoryIds: categoryIds ?? this.categoryIds,
+    paymentModes: paymentModes ?? this.paymentModes,
+    minPaise: clearAmounts ? null : (minPaise ?? this.minPaise),
+    maxPaise: clearAmounts ? null : (maxPaise ?? this.maxPaise),
+    type: clearType ? null : (type ?? this.type),
+  );
 
   /// Keeps the search text, removes every filter.
   TransactionFilter clearFilters() => TransactionFilter(query: query);
@@ -93,7 +92,9 @@ class TransactionFilter {
       // matched literally instead of acting as a LIKE wildcard.
       parts.add(r"(note LIKE ? ESCAPE '\' OR merchant LIKE ? ESCAPE '\')");
       final pattern = '%${escapeLike(q)}%';
-      args..add(pattern)..add(pattern);
+      args
+        ..add(pattern)
+        ..add(pattern);
     }
 
     if (from != null) {
@@ -133,10 +134,8 @@ class TransactionFilter {
   }
 
   /// Puts `\` before `\`, `%` and `_` so LIKE treats them as normal letters.
-  static String escapeLike(String s) => s
-      .replaceAll(r'\', r'\\')
-      .replaceAll('%', r'\%')
-      .replaceAll('_', r'\_');
+  static String escapeLike(String s) =>
+      s.replaceAll(r'\', r'\\').replaceAll('%', r'\%').replaceAll('_', r'\_');
 
   /// "?, ?, ?" for [n] values (only placeholders, never values).
   static String _placeholders(int n) => List.filled(n, '?').join(', ');

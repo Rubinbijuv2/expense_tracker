@@ -19,7 +19,9 @@ class BudgetsScreen extends StatelessWidget {
   static Future<void> open(BuildContext context, DateTime month) {
     context.read<BudgetProvider>().showMonth(month);
     return Navigator.push(
-        context, MaterialPageRoute(builder: (_) => const BudgetsScreen()));
+      context,
+      MaterialPageRoute(builder: (_) => const BudgetsScreen()),
+    );
   }
 
   @override
@@ -64,8 +66,10 @@ class BudgetsScreen extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-            child: Text('Category limits (optional)',
-                style: Theme.of(context).textTheme.titleMedium),
+            child: Text(
+              'Category limits (optional)',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
           ),
           for (final CategoryModel c in bp.expenseCategories)
             _BudgetCard(
@@ -81,11 +85,18 @@ class BudgetsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _edit(BuildContext context, BudgetProvider bp, int? categoryId,
-      String title) async {
+  Future<void> _edit(
+    BuildContext context,
+    BudgetProvider bp,
+    int? categoryId,
+    String title,
+  ) async {
     final current = categoryId == null ? bp.overall : bp.budgetFor(categoryId);
-    final choice = await BudgetLimitDialog.show(context,
-        title: title, currentPaise: current?.limitPaise);
+    final choice = await BudgetLimitDialog.show(
+      context,
+      title: title,
+      currentPaise: current?.limitPaise,
+    );
     if (choice == null || !context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     try {
@@ -99,7 +110,8 @@ class BudgetsScreen extends StatelessWidget {
       }
     } catch (e) {
       messenger.showSnackBar(
-          const SnackBar(content: Text('Could not save the budget')));
+        const SnackBar(content: Text('Could not save the budget')),
+      );
     }
   }
 
@@ -107,11 +119,13 @@ class BudgetsScreen extends StatelessWidget {
     final messenger = ScaffoldMessenger.of(context);
     try {
       final n = await bp.copyFromEarlier();
-      messenger.showSnackBar(SnackBar(
-          content: Text('Copied $n budget${n == 1 ? '' : 's'}')));
+      messenger.showSnackBar(
+        SnackBar(content: Text('Copied $n budget${n == 1 ? '' : 's'}')),
+      );
     } catch (e) {
       messenger.showSnackBar(
-          const SnackBar(content: Text('Could not copy budgets')));
+        const SnackBar(content: Text('Could not copy budgets')),
+      );
     }
   }
 }
@@ -140,8 +154,9 @@ class _BudgetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final b = budget;
-    final muted = theme.textTheme.bodySmall
-        ?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
 
     return Card(
       color: big ? theme.colorScheme.surfaceContainerHigh : null,
@@ -155,37 +170,53 @@ class _BudgetCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: color.withValues(alpha: 0.15),
-                  child: Icon(icon, size: 18, color: color),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(title,
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: color.withValues(alpha: 0.15),
+                    child: Icon(icon, size: 18, color: color),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
                       style: big
                           ? theme.textTheme.titleMedium
-                          : theme.textTheme.bodyLarge),
-                ),
-                if (b == null)
-                  Text('Set limit',
-                      style: theme.textTheme.labelLarge
-                          ?.copyWith(color: theme.colorScheme.primary))
-                else
-                  Text('${budgetPercent(spentPaise, b.limitPaise)}%',
+                          : theme.textTheme.bodyLarge,
+                    ),
+                  ),
+                  if (b == null)
+                    Text(
+                      'Set limit',
                       style: theme.textTheme.labelLarge?.copyWith(
-                          color: budgetColor(context,
-                              budgetLevel(spentPaise, b.limitPaise)),
-                          fontWeight: FontWeight.w600)),
-              ]),
+                        color: theme.colorScheme.primary,
+                      ),
+                    )
+                  else
+                    Text(
+                      '${budgetPercent(spentPaise, b.limitPaise)}%',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: budgetColor(
+                          context,
+                          budgetLevel(spentPaise, b.limitPaise),
+                        ),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: 8),
               if (b == null)
-                Text('No limit · ${formatPaise(spentPaise)} spent',
-                    style: muted)
+                Text(
+                  'No limit · ${formatPaise(spentPaise)} spent',
+                  style: muted,
+                )
               else ...[
                 BudgetProgressBar(
-                    spentPaise: spentPaise, limitPaise: b.limitPaise),
+                  spentPaise: spentPaise,
+                  limitPaise: b.limitPaise,
+                ),
                 const SizedBox(height: 6),
                 Text(_detail(spentPaise, b.limitPaise), style: muted),
               ],

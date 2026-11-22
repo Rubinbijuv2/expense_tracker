@@ -55,12 +55,12 @@ class TransactionTile extends StatelessWidget {
           Text(
             '${txn.isExpense ? '−' : '+'}${formatPaise(txn.amountPaise)}',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: self
-                      ? scheme.outline
-                      : (txn.isExpense ? scheme.error : Colors.green.shade600),
-                  fontWeight: FontWeight.w600,
-                  decoration: self ? TextDecoration.lineThrough : null,
-                ),
+              color: self
+                  ? scheme.outline
+                  : (txn.isExpense ? scheme.error : Colors.green.shade600),
+              fontWeight: FontWeight.w600,
+              decoration: self ? TextDecoration.lineThrough : null,
+            ),
           ),
           if (txn.isExpense && refundedPaise > 0)
             Text(

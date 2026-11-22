@@ -8,7 +8,8 @@ import 'kind_label.dart';
 
 /// "Looks like the same payment" (PLAN.md rule 12): a Bank SMS and a
 /// Receipt SMS with the same amount within 30 minutes, shown as ONE card
-/// with both texts.
+/// with both texts. A payment app notification takes the receipt's place
+/// (PLAN.md 7.5): "Found in Google Pay and bank SMS".
 ///
 /// **Merge** keeps the bank SMS's account and payment mode and the receipt's
 /// merchant and category, leaving one normal card to Save or Edit.
@@ -57,16 +58,22 @@ class MergeCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Looks like the same payment',
+                    receipt.isNotification
+                        ? 'Found in ${receipt.sourceApp ?? receipt.sender} '
+                              'and bank SMS'
+                        : 'Looks like the same payment',
                     style: theme.textTheme.titleMedium,
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: Text(
-                    '−${formatPaise(bank.amountPaise)}',
+                    '${bank.type == 'income' ? '+' : '−'}'
+                    '${formatPaise(bank.amountPaise)}',
                     style: theme.textTheme.titleMedium?.copyWith(
-                      color: scheme.error,
+                      color: bank.type == 'income'
+                          ? Colors.green.shade700
+                          : scheme.error,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

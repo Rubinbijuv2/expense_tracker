@@ -38,8 +38,12 @@ class TransactionRepo {
 
   Future<TransactionModel?> getById(int id) async {
     final db = await _helper.database;
-    final rows =
-        await db.query(_table, where: 'id = ?', whereArgs: [id], limit: 1);
+    final rows = await db.query(
+      _table,
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
     return rows.isEmpty ? null : TransactionModel.fromMap(rows.first);
   }
 
@@ -112,7 +116,9 @@ class TransactionRepo {
   /// Totals per category for one [type] in a month, biggest first.
   /// Used for the pie chart.
   Future<List<CategoryTotal>> totalsByCategory(
-      DateTime month, String type) async {
+    DateTime month,
+    String type,
+  ) async {
     final db = await _helper.database;
     final (start, end) = monthRange(month);
     final rows = await db.rawQuery(

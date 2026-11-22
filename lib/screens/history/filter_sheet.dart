@@ -56,17 +56,16 @@ class _FilterSheetState extends State<FilterSheet> {
     final f = widget.initial;
     _type = f.type;
     if (f.hasDateRange) {
-      _range = DateTimeRange(
-        start: f.from ?? f.to!,
-        end: f.to ?? f.from!,
-      );
+      _range = DateTimeRange(start: f.from ?? f.to!, end: f.to ?? f.from!);
     }
     _categoryIds = {...f.categoryIds};
     _modes = {...f.paymentModes};
     _minCtrl = TextEditingController(
-        text: f.minPaise == null ? '' : paiseToInput(f.minPaise!));
+      text: f.minPaise == null ? '' : paiseToInput(f.minPaise!),
+    );
     _maxCtrl = TextEditingController(
-        text: f.maxPaise == null ? '' : paiseToInput(f.maxPaise!));
+      text: f.maxPaise == null ? '' : paiseToInput(f.maxPaise!),
+    );
   }
 
   @override
@@ -181,10 +180,12 @@ class _FilterSheetState extends State<FilterSheet> {
                 Expanded(
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.date_range),
-                    label: Text(_range == null
-                        ? 'Any date'
-                        : '${dateFmt.format(_range!.start)} – '
-                            '${dateFmt.format(_range!.end)}'),
+                    label: Text(
+                      _range == null
+                          ? 'Any date'
+                          : '${dateFmt.format(_range!.start)} – '
+                                '${dateFmt.format(_range!.end)}',
+                    ),
                     onPressed: _pickRange,
                   ),
                 ),
@@ -208,8 +209,11 @@ class _FilterSheetState extends State<FilterSheet> {
                   FilterChip(
                     label: Text(c.name),
                     selected: _categoryIds.contains(c.id),
-                    onSelected: (on) => setState(() =>
-                        on ? _categoryIds.add(c.id!) : _categoryIds.remove(c.id)),
+                    onSelected: (on) => setState(
+                      () => on
+                          ? _categoryIds.add(c.id!)
+                          : _categoryIds.remove(c.id),
+                    ),
                   ),
               ],
             ),
@@ -224,8 +228,8 @@ class _FilterSheetState extends State<FilterSheet> {
                   FilterChip(
                     label: Text(m),
                     selected: _modes.contains(m),
-                    onSelected: (on) => setState(
-                        () => on ? _modes.add(m) : _modes.remove(m)),
+                    onSelected: (on) =>
+                        setState(() => on ? _modes.add(m) : _modes.remove(m)),
                   ),
               ],
             ),
@@ -266,8 +270,11 @@ class _FilterSheetState extends State<FilterSheet> {
     );
   }
 
-  Widget _amountField(TextEditingController ctrl, String label,
-      String? Function(String?) validator) {
+  Widget _amountField(
+    TextEditingController ctrl,
+    String label,
+    String? Function(String?) validator,
+  ) {
     return TextFormField(
       controller: ctrl,
       decoration: InputDecoration(

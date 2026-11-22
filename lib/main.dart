@@ -20,6 +20,7 @@ import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/recurring/reminder_actions.dart';
 import 'services/cash_reminder_service.dart';
 import 'services/notification_service.dart';
+import 'services/payment_notification_service.dart';
 import 'services/reminder_planner.dart';
 import 'utils/constants.dart';
 import 'widgets/main_shell.dart';
@@ -56,8 +57,20 @@ Future<void> main() async {
   // (The lock screen still covers it until the PIN is entered.)
   if (launchTap != null && settings.onboardingDone) {
     final tap = launchTap;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _onNotificationTap(tap));
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _onNotificationTap(tap),
+    );
   }
+}
+
+/// Started by the Kotlin PaymentNotificationListener (in a hidden Flutter
+/// engine) when a payment app notification arrives while the app is closed.
+/// `@pragma('vm:entry-point')` keeps it in release builds, because no Dart
+/// code calls it. It must be in main.dart, where Kotlin looks for it.
+@pragma('vm:entry-point')
+Future<void> paymentNotificationMain() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await PaymentNotificationService.runInBackground();
 }
 
 /// A notification, or one of its buttons that opens the app, was tapped.
@@ -179,7 +192,9 @@ class AppGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final done = context.select<SettingsProvider, bool>((s) => s.onboardingDone);
+    final done = context.select<SettingsProvider, bool>(
+      (s) => s.onboardingDone,
+    );
     return done ? const MainShell() : const OnboardingScreen();
   }
 }
@@ -192,8 +207,9 @@ class _LockOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locked = context.select<AppLockProvider, bool>((l) => l.isLocked);
-    final onboardingDone =
-        context.select<SettingsProvider, bool>((s) => s.onboardingDone);
+    final onboardingDone = context.select<SettingsProvider, bool>(
+      (s) => s.onboardingDone,
+    );
     final showLock = locked && onboardingDone;
     return Stack(
       children: [

@@ -15,7 +15,7 @@ import 'transaction_provider.dart';
 /// delete or undo.
 class HistoryProvider extends ChangeNotifier {
   HistoryProvider(this._txns, {TransactionRepo? repo})
-      : _repo = repo ?? TransactionRepo() {
+    : _repo = repo ?? TransactionRepo() {
     _txns.addListener(_onTransactionsChanged);
     _refresh();
   }

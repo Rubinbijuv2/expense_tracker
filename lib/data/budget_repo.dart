@@ -18,8 +18,12 @@ class BudgetRepo {
 
   Future<int> update(Budget budget) async {
     final db = await _helper.database;
-    return db.update(_table, budget.toMap(),
-        where: 'id = ?', whereArgs: [budget.id]);
+    return db.update(
+      _table,
+      budget.toMap(),
+      where: 'id = ?',
+      whereArgs: [budget.id],
+    );
   }
 
   Future<int> delete(int id) async {
@@ -29,8 +33,12 @@ class BudgetRepo {
 
   Future<Budget?> getById(int id) async {
     final db = await _helper.database;
-    final rows =
-        await db.query(_table, where: 'id = ?', whereArgs: [id], limit: 1);
+    final rows = await db.query(
+      _table,
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
     return rows.isEmpty ? null : Budget.fromMap(rows.first);
   }
 
@@ -77,14 +85,17 @@ class BudgetRepo {
         ? await getOverall(month)
         : await getForCategory(month, categoryId);
     if (existing == null) {
-      await insert(Budget(
-          month: month, categoryId: categoryId, limitPaise: limitPaise));
+      await insert(
+        Budget(month: month, categoryId: categoryId, limitPaise: limitPaise),
+      );
     } else {
-      await update(existing.copyWith(
-        limitPaise: limitPaise,
-        alert80Sent: false,
-        alert100Sent: false,
-      ));
+      await update(
+        existing.copyWith(
+          limitPaise: limitPaise,
+          alert80Sent: false,
+          alert100Sent: false,
+        ),
+      );
     }
   }
 

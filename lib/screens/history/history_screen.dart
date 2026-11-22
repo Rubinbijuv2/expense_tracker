@@ -30,8 +30,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
     // Start with the provider's text, so it survives switching tabs.
-    _searchCtrl =
-        TextEditingController(text: context.read<HistoryProvider>().filter.query);
+    _searchCtrl = TextEditingController(
+      text: context.read<HistoryProvider>().filter.query,
+    );
   }
 
   @override
@@ -162,25 +163,29 @@ class _HistoryScreenState extends State<HistoryScreen> {
     for (final g in groups) {
       rows.add(_DayHeader(group: g));
       for (final t in g.items) {
-        rows.add(Dismissible(
-          // The key tells Flutter which row was swiped, even after the list changes.
-          key: ValueKey('txn_${t.id}'),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            color: Theme.of(context).colorScheme.errorContainer,
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 24),
-            child: Icon(Icons.delete_outline,
-                color: Theme.of(context).colorScheme.onErrorContainer),
+        rows.add(
+          Dismissible(
+            // The key tells Flutter which row was swiped, even after the list changes.
+            key: ValueKey('txn_${t.id}'),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              color: Theme.of(context).colorScheme.errorContainer,
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 24),
+              child: Icon(
+                Icons.delete_outline,
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+            ),
+            onDismissed: (_) => deleteWithUndo(context, txnProvider, t),
+            child: TransactionTile(
+              txn: t,
+              category: history.categoryById(t.categoryId),
+              refundedPaise: txnProvider.refundedPaise(t.id),
+              onTap: () => AddEditScreen.open(context, txn: t),
+            ),
           ),
-          onDismissed: (_) => deleteWithUndo(context, txnProvider, t),
-          child: TransactionTile(
-            txn: t,
-            category: history.categoryById(t.categoryId),
-            refundedPaise: txnProvider.refundedPaise(t.id),
-            onTap: () => AddEditScreen.open(context, txn: t),
-          ),
-        ));
+        );
       }
     }
 
@@ -241,13 +246,17 @@ class _DayHeader extends StatelessWidget {
         children: [
           Expanded(child: Text(_label(group.day), style: small)),
           if (group.expensePaise > 0)
-            Text('−${formatPaise(group.expensePaise)}',
-                style: small?.copyWith(color: theme.colorScheme.error)),
+            Text(
+              '−${formatPaise(group.expensePaise)}',
+              style: small?.copyWith(color: theme.colorScheme.error),
+            ),
           if (group.expensePaise > 0 && group.incomePaise > 0)
             Text('  ·  ', style: small),
           if (group.incomePaise > 0)
-            Text('+${formatPaise(group.incomePaise)}',
-                style: small?.copyWith(color: Colors.green.shade600)),
+            Text(
+              '+${formatPaise(group.incomePaise)}',
+              style: small?.copyWith(color: Colors.green.shade600),
+            ),
         ],
       ),
     );

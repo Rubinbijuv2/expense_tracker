@@ -71,6 +71,19 @@
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
         </receiver>
+        <!-- Payment app notifications (PLAN.md section 7, off by default). Android binds this
+             service only after the user ticks Expense Tracker on the "Notification access"
+             page. BIND_NOTIFICATION_LISTENER_SERVICE means only the system can connect to it.
+             It reads notifications ONLY from the allow-listed UPI apps. -->
+        <service
+            android:name=".PaymentNotificationListener"
+            android:label="Expense Tracker payment detection"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService"/>
+            </intent-filter>
+        </service>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

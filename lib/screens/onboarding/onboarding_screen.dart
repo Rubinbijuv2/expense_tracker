@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/app_lock_provider.dart';
-import '../../providers/budget_provider.dart';
-import '../../providers/dashboard_provider.dart';
 import '../../providers/detected_sms_provider.dart';
 import '../../providers/settings_provider.dart';
+import 'permissions_page.dart';
 import 'setup_pages.dart';
 
-/// First launch only: 3 intro pages, then name + budget, PIN (twice),
-/// optional fingerprint and the SMS permission page.
+/// First launch only: 3 intro pages, PIN (twice), optional fingerprint and
+/// the permissions page. No name or budget is asked: Home shows
+/// "Set a budget" until one is set.
 ///
 /// Nothing is saved until the last page, so if the app is closed half-way
 /// the user simply starts onboarding again next time.
@@ -25,8 +25,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pages = PageController();
   int _page = 0;
 
-  String _name = '';
-  int? _budgetPaise;
   String? _pin;
   bool _fingerprint = false;
   bool _saving = false;
@@ -40,13 +38,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     (
       icon: Icons.sms_outlined,
       title: 'Bank SMS, done for you',
-      text: 'Bank and UPI SMS are turned into suggested transactions. '
+      text:
+          'Bank and UPI SMS are turned into suggested transactions. '
           'You just tap Save.',
     ),
     (
       icon: Icons.savings_outlined,
       title: 'Stay within budget',
-      text: 'Set a monthly budget and get an alert at 80% and 100%. '
+      text:
+          'Set a monthly budget and get an alert at 80% and 100%. '
           'Everything stays on your phone.',
     ),
   ];
@@ -54,33 +54,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _next() {
     FocusScope.of(context).unfocus();
     _pages.nextPage(
-        duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 
   void _back() {
     _pages.previousPage(
-        duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 
-  Future<void> _finish({required bool allowSms}) async {
+  Future<void> _finish() async {
     if (_saving || _pin == null) return;
     setState(() => _saving = true);
     final settings = context.read<SettingsProvider>();
     final lock = context.read<AppLockProvider>();
-    final budgets = context.read<BudgetProvider>();
-    final dash = context.read<DashboardProvider>();
     final detected = context.read<DetectedSmsProvider>();
     try {
-      await settings.setName(_name);
-      if (_budgetPaise != null) {
-        await budgets.setLimit(null, _budgetPaise!); // this month, overall
-        await dash.loadBudget();
-      }
       await lock.savePin(_pin!);
       await lock.setFingerprintEnabled(_fingerprint);
-      // Home must not ask about SMS again — this page already did.
+      // Home must not ask about SMS again — the permissions page did.
+      // (If SMS was not allowed, Home shows its "Turn on" banner instead.)
       await detected.markPermissionAsked();
-      if (allowSms) await detected.requestPermission();
       // This swaps onboarding for the main app (see AppGate in main.dart).
       await settings.completeOnboarding();
     } catch (e) {
@@ -123,13 +120,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   count: _intro.length,
                   onNext: _next,
                 ),
-              ProfilePage(
-                onDone: (name, budgetPaise) {
-                  _name = name;
-                  _budgetPaise = budgetPaise;
-                  _next();
-                },
-              ),
               PinSetupPage(
                 onDone: (pin) {
                   _pin = pin;
@@ -142,11 +132,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   _next();
                 },
               ),
-              SmsPermissionPage(
-                saving: _saving,
-                onAllow: () => _finish(allowSms: true),
-                onSkip: () => _finish(allowSms: false),
-              ),
+              PermissionsPage(saving: _saving, onFinish: _finish),
             ],
           ),
         ),
@@ -187,13 +173,19 @@ class _IntroPage extends StatelessWidget {
             child: Icon(icon, size: 64, color: scheme.onPrimaryContainer),
           ),
           const SizedBox(height: 32),
-          Text(title,
-              style: textTheme.headlineSmall, textAlign: TextAlign.center),
+          Text(
+            title,
+            style: textTheme.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 12),
-          Text(text,
-              style: textTheme.bodyLarge
-                  ?.copyWith(color: scheme.onSurfaceVariant),
-              textAlign: TextAlign.center),
+          Text(
+            text,
+            style: textTheme.bodyLarge?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
           const Spacer(),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

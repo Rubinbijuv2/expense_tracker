@@ -148,8 +148,8 @@ class _DeveloperSectionState extends State<DeveloperSection> {
         ListTile(
           enabled: !_busy,
           leading: const Icon(Icons.sms_outlined),
-          title: const Text('Test SMS'),
-          subtitle: const Text('Paste a bank SMS and see how it is read'),
+          title: const Text('Test SMS / notification'),
+          subtitle: const Text('Paste a bank SMS or payment app notification'),
           onTap: () => TestSmsScreen.open(context),
         ),
         ListTile(

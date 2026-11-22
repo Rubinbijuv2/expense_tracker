@@ -18,9 +18,9 @@ class Tables {
 
 /// The SQL that builds the database (PLAN.md section 7).
 ///
-/// [createAll] builds a fresh version 2 database. [migrateToV2] upgrades a
-/// version 1 database in place: it only ADDS columns, tables and missing
-/// categories, so every existing row is kept.
+/// [createAll] builds a fresh version 3 database. [migrateToV2] upgrades a
+/// version 1 database and [migrateToV3] a version 2 one, in place: they only
+/// ADD columns, tables and missing categories, so every existing row is kept.
 class DbSchema {
   DbSchema._();
 
@@ -62,7 +62,10 @@ class DbSchema {
         duplicate_of INTEGER
           REFERENCES ${Tables.detectedSms}(id) ON DELETE SET NULL,
         suggested_recurring_id INTEGER
-          REFERENCES ${Tables.recurringPayments}(id) ON DELETE SET NULL
+          REFERENCES ${Tables.recurringPayments}(id) ON DELETE SET NULL,
+        source TEXT NOT NULL DEFAULT 'sms'
+          CHECK (source IN ('sms', 'notification')),
+        source_app TEXT
       )
     ''');
 
@@ -165,6 +168,19 @@ class DbSchema {
     await batch.commit(noResult: true);
 
     await insertMissingDefaults(db);
+  }
+
+  // ---- Version 2 → 3 --------------------------------------------------------
+
+  /// Payment app notifications (PLAN.md 7.6): where a detected row came
+  /// from. Existing rows all came from SMS, so they get the default 'sms'.
+  static Future<void> migrateToV3(DatabaseExecutor db) async {
+    await _addColumnIfMissing(
+      db,
+      Tables.detectedSms,
+      "source TEXT NOT NULL DEFAULT 'sms'",
+    );
+    await _addColumnIfMissing(db, Tables.detectedSms, 'source_app TEXT');
   }
 
   /// Inserts each default category whose name + type is not in the table yet

@@ -5,7 +5,7 @@ import '../../utils/formatters.dart';
 import '../../widgets/budget_progress.dart';
 
 /// Full-width overall budget bar on Home: "₹X of ₹Y used · Z%".
-/// Shows "Set a monthly budget" when none is set. Tap opens Budgets.
+/// Shows "Set a budget" when none is set. Tap opens Budgets.
 /// With [upcomingPaise] it adds the forecast line (PLAN.md 5.4):
 /// "Spent ₹6,000 + ₹4,500 upcoming = ₹10,500 of ₹12,000".
 class BudgetBarCard extends StatelessWidget {
@@ -30,8 +30,9 @@ class BudgetBarCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final limit = limitPaise;
-    final muted = theme.textTheme.bodySmall
-        ?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
 
     return Card(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -42,32 +43,45 @@ class BudgetBarCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: limit == null
-              ? Row(children: [
-                  Icon(Icons.savings_outlined, color: theme.colorScheme.primary),
-                  const SizedBox(width: 12),
-                  const Expanded(child: Text('Set a monthly budget')),
-                  const Icon(Icons.chevron_right),
-                ])
+              ? Row(
+                  children: [
+                    Icon(
+                      Icons.savings_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(child: Text('Set a budget')),
+                    const Icon(Icons.chevron_right),
+                  ],
+                )
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(children: [
-                      Expanded(
-                        child: Text('Monthly budget',
-                            style: theme.textTheme.titleSmall),
-                      ),
-                      Text(
-                        '${budgetPercent(spentPaise, limit)}%',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: budgetColor(
-                              context, budgetLevel(spentPaise, limit)),
-                          fontWeight: FontWeight.w600,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Monthly budget',
+                            style: theme.textTheme.titleSmall,
+                          ),
                         ),
-                      ),
-                    ]),
+                        Text(
+                          '${budgetPercent(spentPaise, limit)}%',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: budgetColor(
+                              context,
+                              budgetLevel(spentPaise, limit),
+                            ),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     BudgetProgressBar(
-                        spentPaise: spentPaise, limitPaise: limit),
+                      spentPaise: spentPaise,
+                      limitPaise: limit,
+                    ),
                     const SizedBox(height: 6),
                     Text(
                       '${formatPaise(spentPaise)} of ${formatPaise(limit)} used',
